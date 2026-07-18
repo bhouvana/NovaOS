@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = [
+    "services/nova-bus",
+    "services/nova-bus-broker",
+    "sdk/nova-app",
+    "sdk/nova-ui",
+    "apps/hello",
+    "tests/vertical-slice",
+    "tools/nova-bus-bench",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "TBD"
+repository = "https://github.com/novaos/novaos"
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "macros", "time", "sync", "signal", "process"] }
+prost = "0.13"
+prost-build = "0.13"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
