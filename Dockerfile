@@ -22,5 +22,11 @@ RUN chmod +x /opt/novaos/tc-root/opt/chroot-start.sh
 COPY deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# noVNC's own entry point is vnc.html, not index.html - without this, visiting
+# the bare domain root just shows websockify's directory listing instead of
+# the desktop. Copied last so editing it doesn't invalidate earlier cached
+# layers (especially the expensive package-resolution step).
+COPY deploy/index.html /usr/share/novnc/index.html
+
 EXPOSE 8080
 CMD ["/entrypoint.sh"]
