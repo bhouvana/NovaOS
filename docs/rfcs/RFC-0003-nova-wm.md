@@ -27,7 +27,8 @@ service-operational contract.
 ## Dependencies
 
 `novabusd` (for publishing window events and receiving focus requests), kernel DRM/KMS
-subsystem, wlroots (linked library, not a separate process).
+subsystem, Smithay (Rust library, statically linked, not a separate process — see
+[ADR-0003](../decisions/ADR-0003-compositor-and-display-protocol.md) Revision).
 
 ## Public APIs
 

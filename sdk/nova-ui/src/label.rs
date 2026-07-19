@@ -8,6 +8,7 @@ use crate::widget::{AccessibilityNode, EventResult, InputEvent, Widget, WidgetId
 /// wrong (and thus not silently trusted) once real text metrics land.
 const ESTIMATED_CHAR_WIDTH: f32 = 8.0;
 const LINE_HEIGHT: f32 = 20.0; // matches docs/specs/10-DESIGN-BIBLE.md §2 `body` line height
+const FONT_SIZE: f32 = 14.0; // docs/specs/10-DESIGN-BIBLE.md §2 `body` type size
 
 pub struct Label {
     id: WidgetId,
@@ -42,7 +43,7 @@ impl Widget for Label {
     }
 
     fn paint(&self, ctx: &mut PaintContext) {
-        ctx.draw_text(self.rect, self.text.clone(), Color::rgb(0x1A, 0x1A, 0x1E)); // on-surface, Nova Light
+        ctx.draw_text(self.rect, self.text.clone(), Color::rgb(0x1A, 0x1A, 0x1E), FONT_SIZE); // on-surface, Nova Light
     }
 
     fn hit_test(&self, point: Point) -> Option<WidgetId> {

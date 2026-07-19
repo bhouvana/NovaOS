@@ -5,6 +5,7 @@ use crate::widget::{AccessibilityNode, EventResult, InputEvent, Widget, WidgetId
 const PADDING: f32 = 12.0; // docs/specs/10-DESIGN-BIBLE.md §3 `spacing.3`
 const HEIGHT: f32 = 32.0; // docs/specs/10-DESIGN-BIBLE.md §8 minimum touch target
 const ESTIMATED_CHAR_WIDTH: f32 = 8.0;
+const FONT_SIZE: f32 = 14.0; // docs/specs/10-DESIGN-BIBLE.md §2 `body` type size
 
 pub struct Button {
     id: WidgetId,
@@ -56,7 +57,7 @@ impl Widget for Button {
             Color::rgb(0x3D, 0x6B, 0xFF) // docs/specs/10-DESIGN-BIBLE.md §1 `accent`
         };
         ctx.fill_rect(self.rect, bg);
-        ctx.draw_text(self.rect, self.label.clone(), Color::rgb(0xFF, 0xFF, 0xFF));
+        ctx.draw_text(self.rect, self.label.clone(), Color::rgb(0xFF, 0xFF, 0xFF), FONT_SIZE);
     }
 
     fn hit_test(&self, point: Point) -> Option<WidgetId> {

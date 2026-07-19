@@ -1,11 +1,9 @@
-//! Headless paint backend for this vertical slice.
-//! docs/specs/05-NOVA-UI-TOOLKIT-SPEC.md §5 specifies a GPU backend and a
-//! software-rasterizer fallback; neither exists yet without a compositor to
-//! present pixels to (docs/12-ROADMAP-AND-MILESTONES.md §4's Environment
-//! note). `PaintContext` here records the same *logical* draw-command
-//! stream either real backend would consume, letting layout/paint logic be
-//! written and tested for real now, with only the final
-//! "commands -> pixels" step deferred.
+//! `PaintContext` records the logical draw-command stream (the "display
+//! list" of docs/specs/05-NOVA-UI-TOOLKIT-SPEC.md §4) a widget tree emits
+//! during its paint phase — kept independent of *how* those commands become
+//! pixels so `nova-ui` stays headless/portable. `render_backend::RenderBackend`
+//! is the trait boundary that consumes this stream; see that module and
+//! `sdk/nova-ui-wayland` for the software and GPU implementations.
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintCommand {
@@ -17,6 +15,11 @@ pub enum PaintCommand {
         rect: crate::geometry::Rect,
         text: String,
         color: Color,
+        /// Font size in logical pixels. Widgets set this from
+        /// `ThemeTokens::type_style` (docs/specs/05-NOVA-UI-TOOLKIT-SPEC.md
+        /// §6) rather than a canvas-wide default, so a `RenderBackend` never
+        /// has to guess a size per command.
+        font_size: f32,
     },
 }
 
@@ -48,11 +51,18 @@ impl PaintContext {
         self.commands.push(PaintCommand::Rect { rect, color });
     }
 
-    pub fn draw_text(&mut self, rect: crate::geometry::Rect, text: impl Into<String>, color: Color) {
+    pub fn draw_text(
+        &mut self,
+        rect: crate::geometry::Rect,
+        text: impl Into<String>,
+        color: Color,
+        font_size: f32,
+    ) {
         self.commands.push(PaintCommand::Text {
             rect,
             text: text.into(),
             color,
+            font_size,
         });
     }
 }

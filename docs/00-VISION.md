@@ -1,98 +1,97 @@
 # NovaOS — Vision & Product Goals
 
-Status: Draft v0.1 · Owner: Chief Architect · Last updated: 2026-07-18
+Status: v0.2 — direction changed · Owner: Chief Architect · Last updated: 2026-07-19
 
-## 1. What NovaOS Is
+> **This document replaces the v0.1 vision below.** The prior direction — a from-scratch
+> desktop platform (custom compositor, custom UI toolkit, custom SDK, custom package
+> format) running on top of an unmodified Linux base — has been abandoned. See §1 for why
+> and §7 for what happens to the work already done under that direction.
 
-**NovaOS is a lightweight desktop platform built on Linux** — that is the framing to use
-publicly, deliberately in preference to "a Linux distro." It is not a kernel project, not
-a driver project, and not a repackaging of an existing desktop environment. It is a new
-user- and developer-facing OS layer — desktop, window manager, applications, SDK, package
-system, and update mechanism — that happens to use Linux as its foundation, the way
-ChromeOS, SteamOS, and Android do. The distinction matters because it correctly signals
-where the engineering investment actually goes: the desktop, the developer platform, and
-the user experience, not the kernel underneath it, which we consume unmodified
-(§ below).
+## 1. What NovaOS Is Now
 
-**Non-goals**: replacing the Linux scheduler, memory manager, network stack, or drivers.
-We consume upstream Linux; we do not fork it.
+**NovaOS is Tiny Core Linux, booted, configured, and curated as a real, complete,
+working desktop operating system.** It is not a from-scratch reimplementation of a
+desktop OS. The engineering effort goes into building and curating a real, modified
+Tiny Core boot image — kernel, drivers, the real X11/window-manager desktop stack, a
+chosen set of real applications — not into writing a new compositor, toolkit, or SDK
+to replace what Tiny Core (and Linux) already provide.
 
-## 2. Why NovaOS Exists
+**Why the change**: the original plan called for building NovaOS's own desktop layer —
+compositor, window manager, UI toolkit, SDK, app suite, package format — from scratch in
+Rust, using Linux only as a kernel underneath. That work reached a real, proven
+milestone (a working Wayland compositor, `desktop/compositor`, booting bare-metal under
+QEMU/KVM via DRM/KMS, with its own shell rendering live). But a custom compositor with
+two demo buttons is not "a whole Linux OS with all its biggest features" — real
+terminal, real window manager, real application ecosystem, years of battle-testing.
+Reproducing that from scratch was never a realistic goal for this project. Tiny Core
+already has all of it, real and working. NovaOS's job is to make that a good, curated,
+purpose-built system — not to reinvent it.
 
-Existing options force a tradeoff NovaOS refuses to accept:
+**Non-goals** (explicit, in addition to §7 below): forking or modifying the Linux
+kernel's scheduler, memory manager, or network stack beyond driver-level changes needed
+for boot; replacing Tiny Core's real window manager, terminal, or core utilities with
+custom-built equivalents.
 
-| Option | Problem |
-|---|---|
-| Mainstream desktop Linux distros (Ubuntu, Fedora) | Assembled from independently-designed components (GNOME/KDE + GTK/Qt + systemd + a package manager none of which were co-designed) → inconsistent UX, heavy idle RAM, slow boot |
-| ChromeOS | Cohesive and fast, but closed, cloud-dependent, not developer-extensible in the way we want |
-| SteamOS | Cohesive and fast, but purpose-built for gaming, not a general desktop/dev platform |
-| Tiny Core / Puppy Linux | Tiny and fast, but dated UX, minimal app ecosystem, not "production quality" |
+## 2. Why NovaOS Exists (revised)
 
-NovaOS's bet: it is possible to get ChromeOS-grade cohesion and boot speed, SteamOS-grade
-performance discipline, and a real desktop-OS application/SDK ecosystem, in one system,
-if every component is designed together instead of assembled from unrelated projects.
+Tiny Core Linux is real, tiny, fast, and complete — but it ships as a generic,
+un-opinionated base meant to be assembled by whoever installs it. NovaOS exists to do
+that assembly work once, well, and curated: a specific, coherent, purpose-built desktop
+experience built on Tiny Core's real components, with a specific kernel configuration,
+a specific application set, and specific defaults — not a blank base the user has to
+configure themselves, and not a reimplementation of what already works.
 
-## 3. Product Goals (ranked)
+## 3. Product Goals (ranked, revised)
 
-1. **Cohesion** — every visible surface (boot animation, desktop, apps, settings) looks and
-   behaves like one product, not a collection of Linux utilities.
-2. **Low resource footprint** — idle RAM 64–100 MB (see [ADR-0001](decisions/ADR-0001-linux-base-distribution.md),
-   [09-PERFORMANCE-STRATEGY.md](09-PERFORMANCE-STRATEGY.md)); runs on decade-old hardware.
-3. **Fast, animated, branded boot** — firmware → kernel → Nova, in seconds, not tens of
-   seconds.
-4. **Instant accessibility** — boots in a browser tab at novaos.dev with zero install,
-   running the *real* OS image, not a mockup.
-5. **Developer-friendly** — a documented SDK, a real package format, a real build system,
-   contribution docs from day one.
-6. **Maintainable at scale** — architected to support 100,000+ LOC without becoming
-   unmaintainable; every subsystem has one clear owner and one clear boundary.
-7. **Open source** — permissive contribution model, public ADRs, public roadmap.
+1. **A real, working boot** — Tiny Core Linux, with whatever kernel/driver
+   modifications are needed, booting reliably under QEMU/KVM and (eventually) real
+   hardware. Proven for the first time 2026-07-19 (see [README.md](../README.md) for
+   current status).
+2. **Curation over construction** — a coherent, deliberately-chosen set of Tiny Core's
+   real packages (window manager, terminal, applications), not everything available,
+   and not custom-built replacements for any of it.
+3. **Low resource footprint** — inherited directly from Tiny Core's own tiny footprint;
+   no longer a target NovaOS has to engineer for separately.
+4. **Honest, verifiable proof** — every milestone demonstrated by a real boot and a
+   real screenshot, not a design document. This has not changed from the prior
+   direction and remains the standing bar.
 
 ## 4. Target Environments
 
-- Real hardware: x86_64 first (broadest driver coverage via upstream Linux), aarch64 as a
-  stretch goal.
-- Virtual machines: QEMU/KVM, VirtualBox, VMware — primary development and CI target.
-- Browser: WASM-compiled x86 emulator booting the real NovaOS ISO (see
-  [07-BROWSER-DEPLOYMENT.md](07-BROWSER-DEPLOYMENT.md)).
+- Virtual machines: QEMU/KVM — primary development and proof target, real and working.
+- Real hardware: x86_64, not yet attempted — the logical next step once the QEMU image
+  is stable.
+- Browser deployment (novaos.dev, WASM x86 emulation): deferred indefinitely — not a
+  current goal.
 
-## 5. Success Criteria (v1.0 definition of done)
+## 5. Success Criteria (current definition of done)
 
-A v1.0 release is a bootable ISO plus a working novaos.dev browser demo that together
-demonstrate:
+- A modified Tiny Core boot image (kernel + initramfs) that boots reliably under
+  QEMU/KVM into a real, usable desktop — done, see [README.md](../README.md) for
+  current status.
+- A curated, deliberate application and window-manager choice (not necessarily
+  flwm/wbar/aterm long-term — those were the first real proof, not a final commitment).
+- Boots on real hardware from the same or an equivalent image.
+- Whatever branding/theming work NovaOS wants to layer on top of Tiny Core's real
+  desktop (wallpaper, icons, defaults) — cosmetic curation, not new software.
 
-- Desktop shell: compositor/WM, launcher, taskbar, notifications, settings, theming
-  (light/dark).
-- Native app suite: Files, Terminal, Text Editor, Paint, Calculator, System Monitor,
-  Package Center, Browser.
-- Nova Arcade: Chess, Snake, Sudoku, Minesweeper, Solitaire.
-- Package manager with signed packages and a working install/update/remove flow.
-- SDK with documented APIs (windowing, UI toolkit, storage, notifications, clipboard,
-  drag-and-drop, settings) and at least one third-party-style sample app built against it,
-  not shipped in-tree.
-- Idle RAM within the 64–100 MB budget, measured and published.
-- Boot time budget met and published (see [09-PERFORMANCE-STRATEGY.md](09-PERFORMANCE-STRATEGY.md)).
-- Installable to real hardware and bootable in-browser from the same ISO artifact.
+## 6. Design Philosophy (unchanged)
 
-## 6. Design Philosophy
+Every decision is evaluated against, in order: **simplicity, maintainability,
+consistency, performance, developer experience, low memory, beautiful UX, modularity.**
+This didn't change with the direction shift — if anything, abandoning the from-scratch
+desktop platform is this philosophy applied at the largest possible scale: prefer a
+boring, well-understood, already-working technology (Tiny Core's real desktop stack)
+over a novel one (a custom compositor/toolkit/SDK) that hadn't earned its complexity.
 
-Every architectural decision is evaluated against, in order: **simplicity,
-maintainability, consistency, performance, developer experience, low memory, beautiful
-UX, modularity.** When two of these conflict, the earlier one in this list wins unless an
-ADR explicitly justifies otherwise.
+## 7. What Happens To The Prior Direction's Work
 
-Concretely this means: prefer one well-integrated component over three loosely-integrated
-ones; prefer no daemon over a daemon; prefer a boring, well-understood technology over a
-novel one unless the novel one earns its complexity with a measured benefit; prefer
-deleting a feature over half-finishing it.
-
-## 7. Non-Goals (explicit)
-
-- Not a general-purpose server OS.
-- Not a from-scratch kernel, bootloader, or driver stack.
-- Not binary-compatible with every existing Linux desktop app out of the box (compatible
-  where cheap — e.g., via a compatibility app-runner — but not a design constraint that
-  shapes the core architecture).
-- Not cloud-account-gated. Local accounts work fully offline.
-- Telemetry and crash reporting are opt-in, off by default, and scoped narrowly (see
-  [08-SECURITY-MODEL.md](08-SECURITY-MODEL.md)).
+Nothing is deleted. `desktop/compositor` (nova-compositor, a real Smithay-based Wayland
+compositor with a proven bare-metal DRM/KMS backend), `desktop/shell` (nova-shell),
+`sdk/nova-ui`, `sdk/nova-ui-wayland`, `sdk/nova-app`, `apps/hello-gui`,
+`apps/nova-files`, `services/nova-bus`, `services/nova-bus-broker`, and the full
+Phase 1/1.5 documentation set (`docs/01-*` through `docs/14-*`, `docs/specs/`,
+`docs/rfcs/`) describe and implement that prior, now-superseded direction. They stay in
+the repo as a real, working record — not hypothetical, not vaporware, genuinely built
+and proven — in case any of it becomes useful again. They are not the active plan. See
+[README.md](../README.md) for the current status and where to actually look.

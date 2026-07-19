@@ -1,168 +1,111 @@
 # NovaOS
 
-**A lightweight desktop platform built on Linux** — not another Linux distro, and not
-positioned as one. The engineering effort here goes into the desktop, the developer
-platform, and the user experience: its own compositor, its own UI toolkit, its own app
-suite, its own SDK, its own package system. Linux supplies the kernel and drivers;
-everything the user or a developer touches is NovaOS. Boots on real hardware, in a VM,
-and directly in your browser.
+**NovaOS is Tiny Core Linux, booted, configured, and curated as a real, complete
+desktop operating system.** Not a from-scratch desktop platform anymore — see
+[docs/00-VISION.md](docs/00-VISION.md) for the full direction change and why.
 
-**Status**: Phase 2 — Vertical Slice, implemented and tested; Phase 2.5 (System
-Validation) not yet performed. Phases 1 and 1.5 (architecture, interaction flows, wire
-protocols, per-service RFCs, byte-level formats) are done. Phase 2's real, working code
-so far: Nova Bus (`services/nova-bus`, `services/nova-bus-broker`), the Nova SDK
-(`sdk/nova-app`, `sdk/nova-ui`), and a Hello World app (`apps/hello`) proven end-to-end
-as real, separate OS processes by `tests/vertical-slice`. The compositor, real boot, and
-browser demo remain environment-blocked (no Linux graphics toolchain in this
-development setup — see
-[docs/12-ROADMAP-AND-MILESTONES.md](docs/12-ROADMAP-AND-MILESTONES.md) §4's Environment
-note). See [docs/IMPLEMENTATION-NOTES/](docs/IMPLEMENTATION-NOTES/) for every place
-running code has diverged from the specs, including one security bug found and fixed
-during implementation.
+**Status (2026-07-19)**: real, proven. A modified Tiny Core boot image (custom kernel
+modules + a curated real X11/window-manager desktop stack — Xorg with the VESA driver,
+`flwm`, `wbar`, `aterm`) boots under QEMU/KVM into a genuine, working desktop: real
+window manager decorations, a live terminal with a real shell, a taskbar. Confirmed by
+screenshot, not by design document. A separate, earlier proof also exists of
+`nova-compositor` (a from-scratch Wayland compositor) booting bare-metal via DRM/KMS —
+see [docs/00-VISION.md](docs/00-VISION.md) §1 and §7 for why that path was set aside
+in favor of Tiny Core's real, already-complete desktop.
 
-## Start Here
+**Not yet in this repository**: the actual build process (downloading Tiny Core's
+kernel source, compiling the DRM/GPU modules it doesn't ship by default, resolving and
+merging the X11/flwm/wbar/aterm package tree, packing the initramfs, and the QEMU
+boot-test/screenshot loop) currently lives in an external WSL2 workspace, not checked
+into this repo. Bringing that into `system/` as real, reproducible tooling is the
+immediate next step — see §"What's Next" below.
 
-- [docs/00-VISION.md](docs/00-VISION.md) — what NovaOS is and why it exists
-- [docs/ENGINEERING-PRINCIPLES.md](docs/ENGINEERING-PRINCIPLES.md) — the short list
-  every contribution is judged against
-- [docs/01-SYSTEM-ARCHITECTURE.md](docs/01-SYSTEM-ARCHITECTURE.md) — the layered system
-  architecture and boot sequence
-- [docs/02-REPOSITORY-STRUCTURE.md](docs/02-REPOSITORY-STRUCTURE.md) — how this repo is
-  organized and why
-- [docs/decisions/](docs/decisions/) — Architecture Decision Records for every
-  significant technology choice
-- [docs/rfcs/README.md](docs/rfcs/README.md) — the RFC process, and per-service
-  contracts for every core Nova service
-- [docs/IMPLEMENTATION-NOTES/README.md](docs/IMPLEMENTATION-NOTES/README.md) — where
-  running code has diverged from the specs, why, and what closes the gap
-- [docs/specs/00-INDEX.md](docs/specs/00-INDEX.md) — the Phase 1.5 engineering
-  specification: interaction flows, wire protocols, memory/boot budgets, and full
-  subsystem specs
-- [docs/12-ROADMAP-AND-MILESTONES.md](docs/12-ROADMAP-AND-MILESTONES.md) — the phased
-  plan from here to a v1.0 release
+## Read This First
 
-## Full Documentation Index
+- [docs/00-VISION.md](docs/00-VISION.md) — what NovaOS is now, why the direction
+  changed, and what happens to the prior work
+- The rest of `docs/` (`docs/01-*` through `docs/14-*`, `docs/specs/`, `docs/rfcs/`) —
+  **historical record of the prior, superseded direction** (a from-scratch desktop
+  platform: custom compositor, UI toolkit, SDK, package format, app suite). Real,
+  working code was built under that plan — see "What's Already Built" below — but it
+  is not the active direction. Read `docs/00-VISION.md` before treating anything else
+  in `docs/` as current.
 
-### Phase 1 — Architecture
+## What's Already Built (prior direction, kept, not active)
 
-| Doc | Covers |
-|---|---|
-| [00-VISION.md](docs/00-VISION.md) | Vision, product goals, success criteria |
-| [01-SYSTEM-ARCHITECTURE.md](docs/01-SYSTEM-ARCHITECTURE.md) | Layers, boot sequence, process topology, tech stack |
-| [02-REPOSITORY-STRUCTURE.md](docs/02-REPOSITORY-STRUCTURE.md) | Folder layout, ownership, dependency rules |
-| [03-DESKTOP-ARCHITECTURE.md](docs/03-DESKTOP-ARCHITECTURE.md) | Compositor, launcher, taskbar, notifications, session management |
-| [04-APPLICATION-FRAMEWORK-AND-SDK.md](docs/04-APPLICATION-FRAMEWORK-AND-SDK.md) | App lifecycle, SDK modules, manifests, plugins |
-| [05-PACKAGE-AND-UPDATE-SYSTEM.md](docs/05-PACKAGE-AND-UPDATE-SYSTEM.md) | `.novapkg` format, Package Center, A/B OS updates |
-| [06-DESIGN-SYSTEM.md](docs/06-DESIGN-SYSTEM.md) | Tokens, motion, components, theming, accessibility |
-| [07-BROWSER-DEPLOYMENT.md](docs/07-BROWSER-DEPLOYMENT.md) | novaos.dev, v86 in-browser boot strategy |
-| [08-SECURITY-MODEL.md](docs/08-SECURITY-MODEL.md) | Permissions, sandboxing, secrets, accounts |
-| [09-PERFORMANCE-STRATEGY.md](docs/09-PERFORMANCE-STRATEGY.md) | RAM/boot/frame-time budgets and enforcement |
-| [10-TESTING-AND-BUILD.md](docs/10-TESTING-AND-BUILD.md) | Build system, CI pipeline, testing pyramid |
-| [11-CODING-STANDARDS.md](docs/11-CODING-STANDARDS.md) | Conventions, versioning, branching, release process |
-| [12-ROADMAP-AND-MILESTONES.md](docs/12-ROADMAP-AND-MILESTONES.md) | Phase 1–6 plan and exit criteria |
-| [13-RISK-ASSESSMENT.md](docs/13-RISK-ASSESSMENT.md) | Known risks and mitigations |
-| [14-FUTURE-VISION.md](docs/14-FUTURE-VISION.md) | Deferred ideas and extensibility surfaces |
+Real, compiled, tested code exists from the earlier from-scratch-desktop-platform
+direction. None of it is deleted; none of it is the current plan.
 
-### Phase 1.5 — Engineering Specification
+- `services/nova-bus`, `services/nova-bus-broker` — a real Protobuf-based IPC bus with
+  a working broker, proven via `tests/vertical-slice` as separate OS processes.
+- `sdk/nova-app`, `sdk/nova-ui`, `sdk/nova-ui-wayland` — app lifecycle, widget, and
+  real-Wayland-rendering primitives.
+- `desktop/compositor` (`nova-compositor`) — a real Smithay-based Wayland compositor,
+  including a from-scratch DRM/KMS bare-metal backend proven to boot and render under
+  QEMU/KVM with no host compositor.
+- `desktop/shell` (`nova-shell`), `apps/hello-gui`, `apps/nova-files` — a taskbar and
+  two real apps, proven running live through `nova-compositor`.
+- `tools/nova-bus-bench` — real measured IPC latency/throughput numbers.
 
-| Doc | Covers |
-|---|---|
-| [specs/00-INDEX.md](docs/specs/00-INDEX.md) | Index + Phase 1 ↔ 1.5 consistency check |
-| [specs/01-INTERACTION-FLOWS.md](docs/specs/01-INTERACTION-FLOWS.md) | Sequence diagrams for every cross-subsystem flow |
-| [specs/02-MEMORY-BUDGET.md](docs/specs/02-MEMORY-BUDGET.md) | Fully itemized RAM ledger |
-| [specs/03-BOOT-TIMELINE.md](docs/specs/03-BOOT-TIMELINE.md) | Millisecond-level VM + hardware boot timelines |
-| [specs/04-WINDOW-MANAGER-SPEC.md](docs/specs/04-WINDOW-MANAGER-SPEC.md) | Window lifecycle, focus, z-order, damage tracking, frame scheduling |
-| [specs/05-NOVA-UI-TOOLKIT-SPEC.md](docs/specs/05-NOVA-UI-TOOLKIT-SPEC.md) | Widget tree, layout algorithm, rendering pipeline, theming |
-| [specs/06-NOVA-SDK-SPEC.md](docs/specs/06-NOVA-SDK-SPEC.md) | Full app model, manifest schema, every SDK API |
-| [specs/07-PACKAGE-FORMAT-SPEC.md](docs/specs/07-PACKAGE-FORMAT-SPEC.md) | Byte-level `.novapkg` layout |
-| [specs/08-BROWSER-ARCHITECTURE-SPEC.md](docs/specs/08-BROWSER-ARCHITECTURE-SPEC.md) | novaos.dev stack, input/clipboard/persistence/network bridging |
-| [specs/09-APPLICATION-SPECS.md](docs/specs/09-APPLICATION-SPECS.md) | Per-app design docs |
-| [specs/10-DESIGN-BIBLE.md](docs/specs/10-DESIGN-BIBLE.md) | Concrete, final design token values |
-| [specs/11-BUILD-PIPELINE-SPEC.md](docs/specs/11-BUILD-PIPELINE-SPEC.md) | Source-to-artifact build pipeline |
-| [specs/12-BROWSER-DEMO-EXPERIENCE.md](docs/specs/12-BROWSER-DEMO-EXPERIENCE.md) | The novaos.dev demo UX |
-| [specs/13-WEBSITE-INFORMATION-ARCHITECTURE.md](docs/specs/13-WEBSITE-INFORMATION-ARCHITECTURE.md) | Full site map |
-| [specs/14-ECOSYSTEM-VISION.md](docs/specs/14-ECOSYSTEM-VISION.md) | Store/Cloud/Sync/Community chain, reconciled against v1 non-goals |
-| [specs/15-NOVA-BUS-PROTOCOL-SPEC.md](docs/specs/15-NOVA-BUS-PROTOCOL-SPEC.md) | Complete Nova Bus wire protocol: envelope, framing, timeouts, error codes, auth |
-| [specs/16-STATE-MACHINES.md](docs/specs/16-STATE-MACHINES.md) | Every subsystem's state machine in one place |
-| [specs/17-SDK-API-REFERENCE-POLICY.md](docs/specs/17-SDK-API-REFERENCE-POLICY.md) | SDK stability tiers, deprecation policy, error conventions |
-| [specs/18-PLUGIN-ARCHITECTURE-SPEC.md](docs/specs/18-PLUGIN-ARCHITECTURE-SPEC.md) | Plugin discovery, nested sandboxing, version negotiation |
-| [specs/19-FILESYSTEM-LAYOUT-SPEC.md](docs/specs/19-FILESYSTEM-LAYOUT-SPEC.md) | The complete on-disk directory tree |
-| [specs/20-CONFIGURATION-STRATEGY-SPEC.md](docs/specs/20-CONFIGURATION-STRATEGY-SPEC.md) | TOML decision, config scopes, live reload, schema evolution |
-| [specs/21-OBSERVABILITY-SPEC.md](docs/specs/21-OBSERVABILITY-SPEC.md) | Logs, metrics, tracing, debug overlays, health checks |
-| [specs/22-RELEASE-PROCESS-SPEC.md](docs/specs/22-RELEASE-PROCESS-SPEC.md) | Release channels, signing hierarchy, rollback, changelogs |
-
-### RFCs — Per-Service Contracts
-
-| RFC | Service |
-|---|---|
-| [rfcs/README.md](docs/rfcs/README.md) | The RFC process itself, and ADR-vs-RFC guidance |
-| [RFC-0001](docs/rfcs/RFC-0001-nova-shell.md) | Nova Shell |
-| [RFC-0002](docs/rfcs/RFC-0002-nova-bus.md) | Nova Bus |
-| [RFC-0003](docs/rfcs/RFC-0003-nova-wm.md) | Nova WM (Compositor) |
-| [RFC-0004](docs/rfcs/RFC-0004-package-service.md) | Package Service |
-| [RFC-0005](docs/rfcs/RFC-0005-notification-service.md) | Notification Service |
-| [RFC-0006](docs/rfcs/RFC-0006-theme-service.md) | Theme Service |
-| [RFC-0007](docs/rfcs/RFC-0007-settings-service.md) | Settings Service |
-| [RFC-0008](docs/rfcs/RFC-0008-session-manager.md) | Session Manager |
-| [RFC-0009](docs/rfcs/RFC-0009-update-service.md) | Update Service |
+See [docs/IMPLEMENTATION-NOTES/](docs/IMPLEMENTATION-NOTES/) for the detailed record of
+this work, including one real security bug found and fixed.
 
 ## Repository Layout
 
 ```
-system/    Base system, boot, init, image build, updates
-services/  Resident Nova Services (IPC bus, session manager, package manager, ...)
-desktop/   Compositor + desktop shell (launcher, taskbar, notifications, settings)
-sdk/       Nova SDK — the only thing apps are allowed to depend on
-apps/      First-party Nova applications and Nova Arcade games
-web/       novaos.dev — browser demo (v86) and documentation site
+system/    Base system, boot, init, image build, updates — where the Tiny Core
+           build/boot tooling belongs once it's brought into the repo (not yet done)
+services/  Nova Bus IPC — prior direction, kept, not active
+desktop/   nova-compositor + nova-shell — prior direction, kept, not active
+sdk/       Nova SDK — prior direction, kept, not active
+apps/      hello-gui, nova-files — prior direction, kept, not active
+web/       novaos.dev browser demo — prior direction, deferred indefinitely
 tools/     Build/CI/dev tooling
 tests/     Cross-crate integration and system tests
-docs/      Everything above
+docs/      Vision (current) + full prior-direction architecture/specs/RFCs (historical)
 ```
 
-See [docs/02-REPOSITORY-STRUCTURE.md](docs/02-REPOSITORY-STRUCTURE.md) for the full
-layout and the dependency rules CI enforces between these folders. Also present now:
-`tests/vertical-slice` (the multi-process proof described above) and
-`tools/nova-bus-bench` (real latency/throughput measurement,
-[docs/IMPLEMENTATION-NOTES/0005](docs/IMPLEMENTATION-NOTES/0005-nova-bus-measured-performance.md)).
+## Building & Testing (prior-direction code)
 
-## Building & Testing
-
-Requires Rust (stable) and `protoc` (the Protobuf compiler — `services/nova-bus`'s
-build script needs it; see
-[docs/IMPLEMENTATION-NOTES/0001](docs/IMPLEMENTATION-NOTES/0001-nova-bus-dev-transport-tcp.md)
-for the platform note on this vertical slice's dev transport).
+The Rust workspace above still builds and tests, if you want to run or extend the
+prior-direction code:
 
 ```sh
 cargo build --workspace
 cargo test --workspace
-cargo run --release -p nova-bus-bench   # real latency/throughput numbers
+cargo run --release -p nova-bus-bench
 ```
 
-If `protoc` isn't on `PATH`, set the `PROTOC` environment variable to its full path.
-No Linux graphics toolchain (wlroots/QEMU) is required to build or test anything above
-— those are only needed for `nova-compositor` and full-image work, which don't exist
-yet ([docs/12-ROADMAP-AND-MILESTONES.md](docs/12-ROADMAP-AND-MILESTONES.md) §4).
+Requires Rust (stable) and `protoc` on `PATH` (or set the `PROTOC` env var).
+`desktop/compositor`, `desktop/shell`, `sdk/nova-ui-wayland`, and `apps/hello-gui` are
+Linux/Wayland-only and are not workspace default-members — build them explicitly with
+`cargo build -p <name>` from a Linux environment (WSL2 with WSLg works for nested
+testing; real QEMU/KVM for the bare-metal DRM backend).
 
-## Principles
+This does **not** build or boot the actual NovaOS product anymore — that's the Tiny
+Core image described above, built outside this repo for now.
 
-Simplicity, maintainability, consistency, performance, developer experience, low memory,
-beautiful UX, modularity — in that priority order when two conflict. See
-[docs/00-VISION.md](docs/00-VISION.md) §6.
+## What's Next
+
+1. Bring the Tiny Core build/boot process (kernel module compilation, package
+   resolution/merge, initramfs packing, QEMU boot-test) into this repo under `system/`
+   as real, reproducible, checked-in tooling — currently it only exists as ad-hoc
+   scripts in an external WSL2 workspace.
+2. Decide and record (as an ADR) what curation NovaOS actually wants on top of Tiny
+   Core's real desktop — which window manager, which apps, what branding/theming —
+   rather than defaulting to whatever was fastest to get booting first (`flwm` +
+   `wbar` + `aterm`, chosen because they matched an existing reference screenshot).
+3. Boot on real hardware, not just QEMU/KVM.
 
 ## Contributing
 
-Not yet open for broad external contribution — the vertical slice
-([docs/12-ROADMAP-AND-MILESTONES.md](docs/12-ROADMAP-AND-MILESTONES.md) §4) is real and
-buildable, but Phase 2.5 (System Validation) hasn't happened yet, so the SDK/protocol
-surface may still change based on what that review finds. See
-[CONTRIBUTING.md](CONTRIBUTING.md) for setup and process. Every non-trivial
-architectural change requires an RFC and/or ADR before implementation
-([docs/rfcs/README.md](docs/rfcs/README.md),
-[docs/11-CODING-STANDARDS.md](docs/11-CODING-STANDARDS.md) §8) — this applies to the
-core team's own ongoing work, not only external contributors.
+Not yet open for broad external contribution. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for setup and process. Every non-trivial architectural change requires an RFC and/or
+ADR before implementation ([docs/rfcs/README.md](docs/rfcs/README.md),
+[docs/11-CODING-STANDARDS.md](docs/11-CODING-STANDARDS.md) §8) — including this
+direction change, which should get its own ADR (not yet written).
 
 ## License
 
 TBD — recorded as an open decision; a permissive/copyleft choice will be captured as an
-ADR before Phase 2 accepts external contributions.
+ADR before this repo accepts external contributions.

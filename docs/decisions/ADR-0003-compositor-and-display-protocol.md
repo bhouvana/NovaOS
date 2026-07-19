@@ -1,6 +1,6 @@
 # ADR-0003: Compositor & Display Protocol
 
-Status: Accepted
+Status: Accepted (Revised)
 Date: 2026-07-18
 Deciders: Chief Architect
 
@@ -55,10 +55,33 @@ satisfies both "small enough to build and maintain" and "fully own the desktop i
 - wlroots is a C library; our compositor code binds to it from Rust
   ([ADR-0004](ADR-0004-systems-language.md)) via existing Rust bindings, isolated behind
   an internal `nova-compositor-core` crate boundary so the FFI surface is small and
-  auditable.
+  auditable. **Superseded 2026-07-18, see Revision below.**
+
+## Revision (2026-07-18): wlroots bindings → Smithay
+
+At Phase 3 implementation start, the Rust bindings this ADR assumed (`wlroots`/
+`wlroots-rs`, `wlroots-sys`) turned out to be effectively abandoned — `wlroots-rs` is
+stuck at v0.4.0 targeting a years-old wlroots API, and `wlroots-sys` v0.16.0 is one
+minor version behind the wlroots (0.17.1) available on target systems, with no ABI
+stability guarantee across minor versions. This is precisely the first Revisit Trigger
+below, hit immediately rather than over time.
+
+**Nova Compositor is built on [Smithay](https://smithay.github.io/) instead** — an
+actively maintained, pure-Rust Wayland compositor library (no wlroots/C dependency,
+no FFI surface) used by production compositors (COSMIC, niri). It provides the same
+category of building blocks wlroots did (DRM/KMS backend, input, protocol plumbing,
+scene graph) with 100% of window-management policy still NovaOS's own code — the core
+rationale of this ADR is unchanged, only the underlying library is.
+
+Everywhere "wlroots" appears elsewhere in the docs (RFC-0003, 03-DESKTOP-ARCHITECTURE.md,
+04-WINDOW-MANAGER-SPEC.md) should be read as "Smithay" — behavioral contracts
+(responsibilities, events, failure modes) are unaffected since those were written at the
+policy level, not the library-API level.
 
 ## Revisit Triggers
 
-- If wlroots' maintenance trajectory stalls or its API churns faster than we can track.
+- ~~If wlroots' maintenance trajectory stalls or its API churns faster than we can
+  track.~~ **Triggered and resolved — see Revision above.**
 - If XWayland-on-demand proves to be a meaningfully large chunk of idle RAM/complexity in
   practice, in which case it may be dropped entirely rather than kept "optional."
+- If Smithay's maintenance trajectory stalls or its API churns faster than we can track.
