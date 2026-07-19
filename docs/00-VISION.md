@@ -84,14 +84,17 @@ desktop platform is this philosophy applied at the largest possible scale: prefe
 boring, well-understood, already-working technology (Tiny Core's real desktop stack)
 over a novel one (a custom compositor/toolkit/SDK) that hadn't earned its complexity.
 
-## 7. What Happens To The Prior Direction's Work
+## 7. What Happened To The Prior Direction's Work
 
-Nothing is deleted. `desktop/compositor` (nova-compositor, a real Smithay-based Wayland
-compositor with a proven bare-metal DRM/KMS backend), `desktop/shell` (nova-shell),
-`sdk/nova-ui`, `sdk/nova-ui-wayland`, `sdk/nova-app`, `apps/hello-gui`,
-`apps/nova-files`, `services/nova-bus`, `services/nova-bus-broker`, and the full
-Phase 1/1.5 documentation set (`docs/01-*` through `docs/14-*`, `docs/specs/`,
-`docs/rfcs/`) describe and implement that prior, now-superseded direction. They stay in
-the repo as a real, working record — not hypothetical, not vaporware, genuinely built
-and proven — in case any of it becomes useful again. They are not the active plan. See
-[README.md](../README.md) for the current status and where to actually look.
+Removed from the working tree 2026-07-19, immediately after this vision was rewritten
+— the user made clear this was a full direction change, not "keep both": `desktop/`
+(nova-compositor, a real Smithay-based Wayland compositor with a proven bare-metal
+DRM/KMS backend, and nova-shell), `sdk/` (nova-ui, nova-ui-wayland, nova-app),
+`apps/` (hello, hello-gui, nova-files), `services/` (nova-bus, nova-bus-broker),
+`tests/`, `tools/`, `web/`, and the full Phase 1/1.5 documentation set (`docs/01-*`
+through `docs/14-*`, `docs/specs/`, `docs/rfcs/`, `docs/IMPLEMENTATION-NOTES/`, and
+ADRs 0002–0010) are all gone from the working tree. None of it is hypothetical — it was
+real, built, and proven (see the git history immediately before the removal commit for
+the full record) — but it is not recoverable from the current working tree, only from
+git history, if it's ever needed again. See [README.md](../README.md) for what
+actually remains and what's next.

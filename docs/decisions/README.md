@@ -49,13 +49,10 @@ Concrete conditions under which this decision should be re-opened.
 
 | ADR | Title | Status |
 |---|---|---|
-| [0001](ADR-0001-linux-base-distribution.md) | Base Linux distribution | Accepted |
-| [0002](ADR-0002-init-and-service-supervision.md) | Init system & service supervision | Accepted |
-| [0003](ADR-0003-compositor-and-display-protocol.md) | Compositor & display protocol | Accepted |
-| [0004](ADR-0004-systems-language.md) | Primary systems language | Accepted |
-| [0005](ADR-0005-ui-toolkit.md) | Native UI toolkit | Accepted |
-| [0006](ADR-0006-ipc-mechanism.md) | IPC mechanism (Nova Bus) | Accepted |
-| [0007](ADR-0007-package-format.md) | Package format & Package Center | Accepted |
-| [0008](ADR-0008-filesystem-and-update-strategy.md) | Root filesystem & update strategy | Accepted |
-| [0009](ADR-0009-browser-boot-emulator.md) | Browser boot emulator | Accepted |
-| [0010](ADR-0010-app-sandboxing-model.md) | Application sandboxing model | Accepted |
+| [0001](ADR-0001-linux-base-distribution.md) | Base Linux distribution | Accepted (revised — see the ADR's own Revision section) |
+
+ADRs 0002–0010 (init system, compositor, systems language, UI toolkit, IPC, package
+format, filesystem/update strategy, browser boot emulator, app sandboxing model) were
+written for the from-scratch desktop platform direction abandoned 2026-07-19 (see
+[docs/00-VISION.md](../00-VISION.md)) and removed along with the code they governed.
+Recoverable from git history if that direction is ever revisited.
