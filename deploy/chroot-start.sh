@@ -29,4 +29,9 @@ echo "=== NovaOS: launching wbar ==="
 wbar -pos bottom -isize 32 &
 
 echo "=== NovaOS: desktop launch sequence complete, starting x11vnc ==="
-exec x11vnc -display :0 -forever -shared -rfbport 5900 -nopw -quiet
+# Tuned for Render's free-tier CPU (a small fraction of one core, far less
+# than a local dev machine): -defer batches rapid changes into fewer encode
+# passes instead of racing to push every intermediate frame, -nocursorshapeupdates
+# and -nobell cut per-event overhead that isn't needed for basic desktop use.
+exec x11vnc -display :0 -forever -shared -rfbport 5900 -nopw -quiet \
+  -defer 40 -wait 40 -nocursorshape -nobell
