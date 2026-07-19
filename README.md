@@ -1,18 +1,27 @@
 # NovaOS
 
 **NovaOS is Tiny Core Linux, booted, configured, and curated as a real, complete
-desktop operating system.** See [docs/00-VISION.md](docs/00-VISION.md) for the full
-direction and why it changed from an earlier from-scratch-desktop-platform plan.
+desktop operating system — deployed so actual people can use it in a browser, not
+just run locally.** See [docs/00-VISION.md](docs/00-VISION.md) for the full direction
+and why it changed from an earlier from-scratch-desktop-platform plan.
 
-**Status (2026-07-19)**: real, proven, not yet in this repo. A modified Tiny Core boot
-image (custom kernel modules + a curated real X11/window-manager desktop stack — Xorg
-with the VESA driver, `flwm`, `wbar`, `aterm`) boots under QEMU/KVM into a genuine,
-working desktop: real window manager decorations, a live terminal with a real shell, a
-taskbar. Confirmed by screenshot, not by design document. The actual build process
-(compiling Tiny Core's DRM/GPU kernel modules, resolving and merging the X11 package
-tree, packing the initramfs, the QEMU boot-test loop) currently lives in an external
-WSL2 workspace — bringing it into this repo as real, reproducible tooling is the
-immediate next step.
+**The actual goal**: a URL where real people can use NovaOS's desktop, not a local
+QEMU VM only its author has seen. See [deploy/](deploy/) for the Render deployment —
+a Docker image that builds the Tiny Core desktop at container-build time and serves
+it over the browser via QEMU + noVNC.
+
+**Status (2026-07-19)**:
+- Proven locally, by screenshot: Tiny Core + Xorg (VESA driver) + `flwm` + `wbar` +
+  `aterm` boots under QEMU/KVM into a genuine, working desktop — real window manager
+  decorations, a live terminal with a real shell, a taskbar. That build process still
+  lives in an external WSL2 workspace, not yet checked into this repo as reproducible
+  tooling.
+- Written, not yet build-tested: [`Dockerfile`](Dockerfile) +
+  [`deploy/`](deploy/) — a self-contained build (runs on Render's build
+  infrastructure, doesn't depend on the local WSL2 workspace at all) that fetches
+  Tiny Core fresh, merges the same curated desktop package set, and serves it over
+  noVNC. Local Docker testing was blocked by an unrelated host disk-space incident at
+  write time — see [deploy/README.md](deploy/README.md) for exactly what's unverified.
 
 ## What's Here
 
@@ -29,24 +38,28 @@ What remains:
 - [docs/00-VISION.md](docs/00-VISION.md) — the current vision and goals.
 - [docs/decisions/](docs/decisions/) — the ADR process, and ADR-0001 (base Linux
   distribution), still accurate: Tiny Core.
+- [Dockerfile](Dockerfile), [deploy/](deploy/) — the Render deployment: builds and
+  serves the NovaOS desktop over the browser via QEMU + noVNC.
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ## What's Next
 
-1. Bring the Tiny Core build/boot process (kernel module compilation, `.tcz` package
-   resolution/merge, initramfs packing, QEMU boot-test) into this repo — currently it
-   only exists as ad-hoc scripts in an external WSL2 workspace, nothing checked in.
-2. Decide and record (as a new ADR) what curation NovaOS actually wants on top of Tiny
+1. Actually build-test the Docker image and deploy it to Render — confirm the
+   package names, boot time, and RAM budget noted as unverified in
+   [deploy/README.md](deploy/README.md).
+2. Bring the *local* Tiny Core build/boot process (proven working via WSL2/QEMU,
+   used for local iteration and screenshots) into this repo too, separately from the
+   Docker deployment path — currently only ad-hoc scripts in an external workspace.
+3. Decide and record (as a new ADR) what curation NovaOS actually wants on top of Tiny
    Core's real desktop — which window manager, which apps, what branding/theming —
    rather than defaulting to whatever booted first (`flwm` + `wbar` + `aterm`, chosen
    because it matched an existing reference screenshot).
-3. Write an ADR for this direction change itself.
-4. Boot on real hardware, not just QEMU/KVM.
+4. Write an ADR for this direction change itself.
+5. Boot on real hardware, not just QEMU/KVM.
 
 ## Contributing
 
-Not yet open for contribution — there's no buildable tooling in the repo yet to
-onboard around (see "What's Next" above).
+Not yet open for contribution.
 
 ## License
 

@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: novaos
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /vnc.html
+    envVars:
+      - key: QEMU_RAM
+        value: 512
