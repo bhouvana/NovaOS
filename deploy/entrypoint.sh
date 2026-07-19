@@ -2,20 +2,36 @@
 set -e
 
 PORT="${PORT:-8080}"
-QEMU_RAM="${QEMU_RAM:-1024}"
+TCROOT=/opt/novaos/tc-root
 
-echo "=== NovaOS: starting QEMU (software emulation, no KVM on Render) ==="
-qemu-system-x86_64 \
-  -m "$QEMU_RAM" -smp 1 \
-  -kernel /opt/novaos/vmlinuz64 \
-  -initrd /opt/novaos/novaos-initrd.gz \
-  -vga std \
-  -display vnc=0.0.0.0:0 \
-  -serial mon:stdio \
-  -append "console=ttyS0 noembed" &
+echo "=== NovaOS: best-effort bind mounts for /dev, /proc, /sys (skipped if unprivileged) ==="
+mount --bind /dev "$TCROOT/dev" 2>/dev/null || echo "  (no /dev bind - continuing without it)"
+mount --bind /dev/pts "$TCROOT/dev/pts" 2>/dev/null || echo "  (no /dev/pts bind - continuing without it)"
+mount --bind /proc "$TCROOT/proc" 2>/dev/null || echo "  (no /proc bind - continuing without it)"
+mount --bind /sys "$TCROOT/sys" 2>/dev/null || echo "  (no /sys bind - continuing without it)"
 
-QEMU_PID=$!
-echo "QEMU pid=$QEMU_PID, VNC on :5900"
+echo "=== NovaOS: starting Tiny Core desktop natively via chroot (no VM, no CPU emulation) ==="
+chroot "$TCROOT" /opt/chroot-start.sh &
+
+echo "=== NovaOS: waiting for X server TCP port (6000) ==="
+for i in $(seq 1 20); do
+  if (echo > /dev/tcp/127.0.0.1/6000) 2>/dev/null; then
+    echo "X server ready after ${i}s"
+    break
+  fi
+  sleep 1
+done
+
+# Known limitation: aterm only supports Unix98 PTY allocation (/dev/ptmx +
+# ptsname()), which needs a mounted devpts instance to resolve the slave path.
+# Render's containers (like local unprivileged Docker) grant no CAP_SYS_ADMIN,
+# so devpts can't be mounted anywhere, in or out of the chroot - confirmed via
+# direct testing (mount -t devpts fails with EPERM even locally). Running aterm
+# outside the chroot avoids the PTY error but breaks its terminfo/locale/passwd
+# lookups (hardcoded to the real root), causing a crash instead. Left disabled
+# until a proper fix (e.g. a custom launcher using TIOCGPTPEER, or patching
+# aterm) - the rest of the desktop (flwm, wbar, all GUI apps, Doom) is unaffected.
+echo "=== NovaOS: terminal app (aterm) skipped - known PTY limitation under unprivileged containers ==="
 
 echo "=== NovaOS: waiting for VNC port ==="
 for i in $(seq 1 30); do

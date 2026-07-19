@@ -5,6 +5,3 @@ services:
     dockerfilePath: ./Dockerfile
     plan: starter
     healthCheckPath: /vnc.html
-    envVars:
-      - key: QEMU_RAM
-        value: 1024

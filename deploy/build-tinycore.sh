@@ -1,52 +1,61 @@
 #!/bin/bash
-# Runs during `docker build`. Fetches Tiny Core's stock kernel + base rootfs,
-# resolves and downloads a curated X11/flwm/wbar/aterm desktop package set,
-# merges everything into a single initramfs NovaOS boots from at runtime.
+# Runs during `docker build`. Fetches Tiny Core's curated desktop package set
+# and merges it into a real rootfs directory (no kernel, no initramfs) - the
+# container runs this rootfs directly via chroot at runtime, native speed,
+# no nested VM/CPU emulation at all.
 set -euo pipefail
 
 WORK=/build
 BASE_URL=http://tinycorelinux.net/16.x/x86_64
 TCZ_URL="$BASE_URL/tcz"
-OUT=/opt/novaos
+OUT=/opt/novaos/tc-root
 
-mkdir -p "$WORK/rootfs" "$WORK/tcz" "$WORK/extract" "$OUT"
+mkdir -p "$WORK/rootfs" "$WORK/tcz" "$WORK/extract"
+mkdir -p "$OUT"
 cd "$WORK"
 
-echo "== fetching stock kernel + base rootfs =="
-curl -sSf -o vmlinuz64 "$BASE_URL/release/distribution_files/vmlinuz64"
+echo "== fetching Tiny Core base rootfs (userland only, no kernel needed) =="
 curl -sSf -o corepure64.gz "$BASE_URL/release/distribution_files/corepure64.gz"
-cp vmlinuz64 "$OUT/vmlinuz64"
 
 echo "== unpack base rootfs =="
 cd "$WORK/rootfs"
 zcat "$WORK/corepure64.gz" | cpio -id --quiet
 cd "$WORK"
 
-echo "== resolve curated X11/flwm/wbar/aterm/uzdoom package set (transitive deps) =="
-SEED="Xorg-7.7 Xorg-7.7-bin Xorg-7.7-lib vesa-Xorg.conf Xprogs flwm wbar aterm uzdoom"
+echo "== resolve curated full-desktop package set (transitive deps, parallel) =="
+SEED="Xorg-7.7 Xorg-7.7-bin Xorg-7.7-lib Xorg-7.7-3d Xprogs flwm wbar aterm uzdoom pcmanfm leafpad geany gpicview galculator abiword midori mtpaint x11vnc"
 > queue.txt
 > resolved.txt
+mkdir -p deps
 for p in $SEED; do echo "$p" >> queue.txt; done
 
 ROUND=0
 while [ -s queue.txt ]; do
   ROUND=$((ROUND+1))
-  sort -u queue.txt > queue_u.txt && mv queue_u.txt queue.txt
+  sort -u queue.txt | comm -23 - <(sort -u resolved.txt) > queue_new.txt
+  mv queue_new.txt queue.txt
+  [ -s queue.txt ] || break
+  cat queue.txt >> resolved.txt
+  sort -u resolved.txt -o resolved.txt
+  echo "  round $ROUND: resolving $(wc -l < queue.txt) new packages in parallel"
+
+  xargs -P 20 -I{} sh -c \
+    'f="tcz/{}.tcz"; [ -f "$f" ] || curl -sSf -o "$f" "'"$TCZ_URL"'/{}.tcz" 2>/dev/null || true' \
+    < queue.txt
+  xargs -P 20 -I{} sh -c \
+    'curl -sSf "'"$TCZ_URL"'/{}.tcz.dep" 2>/dev/null > "deps/{}" || true' \
+    < queue.txt
+
   > next_queue.txt
   while read -r pkg; do
     [ -z "$pkg" ] && continue
-    grep -qx "$pkg" resolved.txt 2>/dev/null && continue
-    echo "$pkg" >> resolved.txt
-    if [ ! -f "tcz/$pkg.tcz" ]; then
-      curl -sSf -o "tcz/$pkg.tcz" "$TCZ_URL/$pkg.tcz" || echo "WARN: failed to download $pkg.tcz"
-    fi
-    dep=$(curl -sSf "$TCZ_URL/$pkg.tcz.dep" 2>/dev/null || true)
-    for d in $dep; do
+    [ -s "deps/$pkg" ] || continue
+    for d in $(cat "deps/$pkg"); do
       dname="${d%.tcz}"
-      grep -qx "$dname" resolved.txt 2>/dev/null || echo "$dname" >> next_queue.txt
+      echo "$dname" >> next_queue.txt
     done
   done < queue.txt
-  sort -u next_queue.txt > queue.txt
+  sort -u next_queue.txt | comm -23 - <(sort -u resolved.txt) > queue.txt
   [ "$ROUND" -gt 15 ] && { echo "too many rounds, stopping"; break; }
 done
 echo "== resolved $(wc -l < resolved.txt) packages =="
@@ -64,15 +73,14 @@ du -sh "$WORK/rootfs"
 
 echo "== install NovaOS boot config =="
 mkdir -p "$WORK/rootfs/opt"
-cp /build-assets/xorg.conf "$WORK/rootfs/opt/xorg.conf"
 cp /build-assets/wbar.conf "$WORK/rootfs/opt/wbar.conf"
-cp /build-assets/bootlocal.sh "$WORK/rootfs/opt/bootlocal.sh"
-chmod +x "$WORK/rootfs/opt/bootlocal.sh"
 
-echo "== repack initramfs =="
-cd "$WORK/rootfs"
-find . | cpio -o -H newc 2>/dev/null | gzip -1 > "$OUT/novaos-initrd.gz"
-ls -la "$OUT/"
+echo "== move rootfs into place as a real directory tree (no packing) =="
+mkdir -p /tmp/dev /tmp/proc /tmp/sys  # placeholders; real ones bind-mounted at runtime
+rm -rf "$OUT"
+mv "$WORK/rootfs" "$OUT"
+mkdir -p "$OUT/dev" "$OUT/proc" "$OUT/sys" "$OUT/tmp"
+du -sh "$OUT"
 
 echo "== cleanup build artifacts to shrink image layer =="
 rm -rf "$WORK"
