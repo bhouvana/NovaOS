@@ -3,5 +3,5 @@ services:
     name: novaos
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free
     healthCheckPath: /vnc.html
