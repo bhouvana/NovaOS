@@ -17,9 +17,10 @@ cd "$WORK"
 echo "== fetching Tiny Core base rootfs (userland only, no kernel needed) =="
 curl -sSf -o corepure64.gz "$BASE_URL/release/distribution_files/corepure64.gz"
 
-echo "== unpack base rootfs =="
+echo "== unpack base rootfs (skip dev/* - sandboxed builders reject mknod at build time) =="
 cd "$WORK/rootfs"
-zcat "$WORK/corepure64.gz" | cpio -id --quiet
+zcat "$WORK/corepure64.gz" | cpio -id --quiet -f 'dev/*'
+mkdir -p dev
 cd "$WORK"
 
 echo "== resolve curated full-desktop package set (transitive deps, parallel) =="

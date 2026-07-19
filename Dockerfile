@@ -19,17 +19,6 @@ RUN chmod +x /build-tinycore.sh && /build-tinycore.sh
 COPY deploy/chroot-start.sh /opt/novaos/tc-root/opt/chroot-start.sh
 RUN chmod +x /opt/novaos/tc-root/opt/chroot-start.sh
 
-# Minimal device nodes for the chroot'd Tiny Core rootfs - created at build time
-# so no runtime mount privileges are required (Render doesn't grant CAP_SYS_ADMIN).
-# Tiny Core's own base rootfs already ships some of these - skip if present.
-RUN mkdir -p /opt/novaos/tc-root/dev/pts && cd /opt/novaos/tc-root/dev \
-    && [ -e null ] || mknod -m 666 null c 1 3 \
-    && [ -e zero ] || mknod -m 666 zero c 1 5 \
-    && [ -e random ] || mknod -m 666 random c 1 8 \
-    && [ -e urandom ] || mknod -m 666 urandom c 1 9 \
-    && [ -e tty ] || mknod -m 666 tty c 5 0 \
-    && [ -e ptmx ] || mknod -m 666 ptmx c 5 2
-
 COPY deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

@@ -4,6 +4,17 @@ set -e
 PORT="${PORT:-8080}"
 TCROOT=/opt/novaos/tc-root
 
+echo "=== NovaOS: creating minimal device nodes for the chroot (build-time mknod is blocked by sandboxed builders like Render's, but CAP_MKNOD is normally available at container runtime) ==="
+mkdir -p "$TCROOT/dev/pts"
+cd "$TCROOT/dev"
+[ -e null ]    || mknod -m 666 null c 1 3    2>/dev/null || echo "  (mknod null failed - continuing)"
+[ -e zero ]    || mknod -m 666 zero c 1 5    2>/dev/null || echo "  (mknod zero failed - continuing)"
+[ -e random ]  || mknod -m 666 random c 1 8  2>/dev/null || echo "  (mknod random failed - continuing)"
+[ -e urandom ] || mknod -m 666 urandom c 1 9 2>/dev/null || echo "  (mknod urandom failed - continuing)"
+[ -e tty ]     || mknod -m 666 tty c 5 0     2>/dev/null || echo "  (mknod tty failed - continuing)"
+[ -e ptmx ]    || mknod -m 666 ptmx c 5 2    2>/dev/null || echo "  (mknod ptmx failed - continuing)"
+cd /
+
 echo "=== NovaOS: best-effort bind mounts for /dev, /proc, /sys (skipped if unprivileged) ==="
 mount --bind /dev "$TCROOT/dev" 2>/dev/null || echo "  (no /dev bind - continuing without it)"
 mount --bind /dev/pts "$TCROOT/dev/pts" 2>/dev/null || echo "  (no /dev/pts bind - continuing without it)"
