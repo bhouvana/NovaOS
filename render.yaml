@@ -7,4 +7,4 @@ services:
     healthCheckPath: /vnc.html
     envVars:
       - key: QEMU_RAM
-        value: 512
+        value: 1024

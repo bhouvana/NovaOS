@@ -8,7 +8,7 @@ export HOME=/root
 export PATH=/usr/local/bin:/usr/local/sbin:$PATH
 export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:/lib
 
-cp /usr/local/share/wbar/dot.wbar /root/.wbar 2>/dev/null
+cp /opt/wbar.conf /root/.wbar 2>/dev/null
 
 echo "=== NovaOS: launching Xorg directly ===" > /dev/console
 /usr/local/bin/Xorg :0 vt1 -config /opt/xorg.conf -nolisten tcp -ac -novtswitch > /dev/console 2>&1 &

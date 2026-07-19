@@ -2,7 +2,7 @@
 set -e
 
 PORT="${PORT:-8080}"
-QEMU_RAM="${QEMU_RAM:-512}"
+QEMU_RAM="${QEMU_RAM:-1024}"
 
 echo "=== NovaOS: starting QEMU (software emulation, no KVM on Render) ==="
 qemu-system-x86_64 \

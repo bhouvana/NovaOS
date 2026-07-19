@@ -22,8 +22,8 @@ cd "$WORK/rootfs"
 zcat "$WORK/corepure64.gz" | cpio -id --quiet
 cd "$WORK"
 
-echo "== resolve curated X11/flwm/wbar/aterm package set (transitive deps) =="
-SEED="Xorg-7.7 Xorg-7.7-bin Xorg-7.7-lib vesa-Xorg.conf Xprogs flwm wbar aterm"
+echo "== resolve curated X11/flwm/wbar/aterm/uzdoom package set (transitive deps) =="
+SEED="Xorg-7.7 Xorg-7.7-bin Xorg-7.7-lib vesa-Xorg.conf Xprogs flwm wbar aterm uzdoom"
 > queue.txt
 > resolved.txt
 for p in $SEED; do echo "$p" >> queue.txt; done
@@ -65,6 +65,7 @@ du -sh "$WORK/rootfs"
 echo "== install NovaOS boot config =="
 mkdir -p "$WORK/rootfs/opt"
 cp /build-assets/xorg.conf "$WORK/rootfs/opt/xorg.conf"
+cp /build-assets/wbar.conf "$WORK/rootfs/opt/wbar.conf"
 cp /build-assets/bootlocal.sh "$WORK/rootfs/opt/bootlocal.sh"
 chmod +x "$WORK/rootfs/opt/bootlocal.sh"
 

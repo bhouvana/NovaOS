@@ -19,9 +19,11 @@ it over the browser via QEMU + noVNC.
 - Written, not yet build-tested: [`Dockerfile`](Dockerfile) +
   [`deploy/`](deploy/) — a self-contained build (runs on Render's build
   infrastructure, doesn't depend on the local WSL2 workspace at all) that fetches
-  Tiny Core fresh, merges the same curated desktop package set, and serves it over
-  noVNC. Local Docker testing was blocked by an unrelated host disk-space incident at
-  write time — see [deploy/README.md](deploy/README.md) for exactly what's unverified.
+  Tiny Core fresh, merges the curated desktop package set (`flwm` + `wbar` + `aterm` +
+  `uzdoom`/Doom), and serves it over noVNC. Local Docker testing was blocked by an
+  unrelated host disk-space incident at write time — see
+  [deploy/README.md](deploy/README.md) for exactly what's unverified, including a real
+  open question about whether Doom's engine will run at all without GPU acceleration.
 
 ## What's Here
 
