@@ -505,5 +505,15 @@ fi
 # browser window exactly with no scrollbars regardless of screen size,
 # without depending on RandR renegotiation timing. Kept here too since it's
 # harmless and some clients may still prefer server-side resize.
+#
+# -defer/-wait: x11vnc's own defaults are 20ms/20ms; this was previously set
+# to 40/40 (double the default) specifically to cut CPU/network load for
+# Render's constrained free-tier CPU - a real tradeoff at the time, but this
+# now runs locally with a real machine's resources, so that tradeoff was
+# just adding latency to every screen update for no benefit anymore. Cut
+# well below even x11vnc's own default given how much headroom a local
+# machine has compared to what these were originally tuned for. -threads
+# handles input/output on separate threads per client instead of one,
+# which matters more once updates are this much more frequent.
 exec x11vnc -display :0 -forever -shared -rfbport 5900 -nopw -quiet \
-  -defer 40 -wait 40 -nocursorshape -nobell -xrandr resize
+  -defer 5 -wait 5 -threads -nocursorshape -nobell -xrandr resize
