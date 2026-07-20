@@ -349,11 +349,18 @@ find "$HOME/.wmx" -type f | while read -r f; do
   [ -z "$icon" ] && icon="$GENERIC_ICON"
   destdir="$HOME/Desktop/$category"
   mkdir -p "$destdir"
+  # Exec must be quoted when the path contains a space (almost every
+  # multi-word label here, e.g. "File Manager") - the Desktop Entry spec
+  # tokenizes Exec on unescaped whitespace, so an unquoted
+  # "/root/.wmx/Files/File Manager" gets parsed as running the nonexistent
+  # binary "/root/.wmx/Files/File" with an argument "Manager", which is
+  # exactly the "Invalid desktop entry file" error this produced for
+  # basically any icon with a space in its name.
   cat > "$destdir/$label.desktop" << EOF2
 [Desktop Entry]
 Type=Application
 Name=$label
-Exec=$f
+Exec="$f"
 Icon=$icon
 Terminal=false
 EOF2
@@ -446,20 +453,30 @@ conky &
 # minimal, pre-EWMH-era window manager), so pcmanfm's desktop-icon window -
 # which relies on that hint to know it belongs at the very bottom of the
 # stack - ends up on top of everything instead, hiding wbar and conky behind
-# solid black (confirmed empirically). A one-shot raise right after launch
-# isn't enough either - confirmed empirically that wbar/conky can end up
-# covered again sometime after boot even once successfully raised once
-# (pcmanfm re-asserting its own stacking position, most likely). Runs as a
-# standing background loop for the life of the session instead of a single
-# fix-up, so it self-heals whenever this happens rather than only covering
-# the boot race. Cheap - two xdotool searches every few seconds.
+# solid black (confirmed empirically). flwm does respect the EWMH
+# _NET_WM_STATE_ABOVE hint though (confirmed directly: raising pcmanfm's own
+# windows afterward no longer covers wbar/conky once this is set) - set
+# once here, which covers the boot race and ordinary desktop interaction
+# (clicking/hovering an icon used to be enough to cover them again with the
+# old plain-raise approach; it isn't anymore).
+#
+# ABOVE doesn't persist against a brand new window appearing later, though
+# (confirmed directly: opening Firefox covered them again despite ABOVE
+# already being set beforehand) - it seems to only hold against windows
+# already in the stack at the time it's set, not future ones. A tight
+# polling loop as a backstop specifically for that case - short enough
+# (0.5s) that a newly opened app's overlap corrects near-instantly instead
+# of needing several clicks to notice, unlike the original 3s version of
+# this same idea.
+WBAR_WIN=$(xdotool search --name wbar 2>/dev/null | head -1)
+[ -n "$WBAR_WIN" ] && xdotool windowstate --add ABOVE "$WBAR_WIN" 2>/dev/null
+CONKY_WIN=$(xdotool search --class conky 2>/dev/null | head -1)
+[ -n "$CONKY_WIN" ] && xdotool windowstate --add ABOVE "$CONKY_WIN" 2>/dev/null
 (
   while true; do
-    WBAR_WIN=$(xdotool search --name wbar 2>/dev/null | head -1)
     [ -n "$WBAR_WIN" ] && xdotool windowraise "$WBAR_WIN" 2>/dev/null
-    CONKY_WIN=$(xdotool search --class conky 2>/dev/null | head -1)
     [ -n "$CONKY_WIN" ] && xdotool windowraise "$CONKY_WIN" 2>/dev/null
-    sleep 3
+    sleep 0.5
   done
 ) &
 
