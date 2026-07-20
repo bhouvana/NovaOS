@@ -12,7 +12,16 @@
 # If that happens, this script tells you exactly what to do and you just run
 # the same command again afterward.
 
-$ErrorActionPreference = "Stop"
+# Deliberately NOT "Stop": in Windows PowerShell 5.1, any native command that
+# writes to stderr - git, docker, winget all do this routinely for perfectly
+# normal, successful runs - gets wrapped into a terminating error under
+# $ErrorActionPreference = "Stop", regardless of the command's real exit
+# code (confirmed: crashed on a fully successful `docker info` over a
+# harmless "WARNING: DOCKER_INSECURE_NO_IPTABLES_RAW is set" line). Every
+# native call below already checks $LASTEXITCODE itself and calls Die on
+# failure - that's the actual control flow this script relies on, not
+# PowerShell's automatic error promotion.
+$ErrorActionPreference = "Continue"
 $Image = "ghcr.io/bhouvana/novaos:latest"
 $PortEnv = $env:NOVAOS_PORT
 if ([string]::IsNullOrEmpty($PortEnv)) { $Port = 8080 } else { $Port = [int]$PortEnv }
@@ -22,6 +31,22 @@ function Info($msg)  { Write-Host "==> $msg" -ForegroundColor Cyan }
 function Ok($msg)    { Write-Host "[OK] $msg" -ForegroundColor Green }
 function Warn($msg)  { Write-Host "[!] $msg" -ForegroundColor Yellow }
 function Die($msg)   { Write-Host "[X] $msg" -ForegroundColor Red; exit 1 }
+
+# Suppresses a native command's routine stdout/stderr chatter (progress
+# bars, layer-pull noise) for a cleaner install experience. Not what fixes
+# the stderr-crashes-the-script issue above - $ErrorActionPreference =
+# "Continue" already handles that - this is purely for quiet output.
+# $LASTEXITCODE is untouched and still checked normally by each call site.
+function Invoke-Quiet {
+    param([scriptblock]$Command)
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $Command *> $null
+    } finally {
+        $ErrorActionPreference = $prevEAP
+    }
+}
 
 # --- 1. make sure Docker is installed and running ---------------------------
 $dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
@@ -46,7 +71,7 @@ if (-not $dockerCmd) {
     $ready = $false
     for ($i = 0; $i -lt 90; $i++) {
         Start-Sleep -Seconds 2
-        docker info *> $null
+        Invoke-Quiet { docker info }
         if ($LASTEXITCODE -eq 0) { $ready = $true; break }
     }
     if (-not $ready) {
@@ -56,7 +81,7 @@ if (-not $dockerCmd) {
     Ok "Docker is already installed."
 }
 
-docker info *> $null
+Invoke-Quiet { docker info }
 if ($LASTEXITCODE -ne 0) {
     Die "Docker is installed but not running. Start Docker Desktop from the Start menu, wait for it to say 'running', then re-run this command."
 }
@@ -64,7 +89,7 @@ Ok "Docker is running."
 
 # --- 2. get the image --------------------------------------------------------
 Info "Pulling the NovaOS image (this is a one-time download, a few GB)..."
-docker pull $Image *> $null
+Invoke-Quiet { docker pull $Image }
 if ($LASTEXITCODE -ne 0) {
     Warn "Couldn't pull the prebuilt image (not published yet, or offline) - building it locally instead. This is much slower (~20-30 minutes, one time only) since it compiles the whole desktop from source."
     $git = Get-Command git -ErrorAction SilentlyContinue
@@ -85,12 +110,14 @@ Ok "NovaOS image ready."
 # installed via the in-desktop Software Center persist across restarts and
 # even NovaOS image updates (everything else always comes from the image, so
 # a newer NovaOS pull still gets you the update, not a frozen copy).
-docker rm -f $Name *> $null
+Invoke-Quiet { docker rm -f $Name }
 Info "Starting NovaOS..."
-docker run -d --name $Name --restart unless-stopped -p "${Port}:8080" -e PORT=8080 --privileged `
-  -v novaos-home:/opt/novaos/tc-root/root `
-  -v novaos-tce:/opt/novaos/tc-root/etc/sysconfig/tcedir `
-  $Image *> $null
+Invoke-Quiet {
+    docker run -d --name $Name --restart unless-stopped -p "${Port}:8080" -e PORT=8080 --privileged `
+      -v novaos-home:/opt/novaos/tc-root/root `
+      -v novaos-tce:/opt/novaos/tc-root/etc/sysconfig/tcedir `
+      $Image
+}
 
 Info "Waiting for the desktop to come up..."
 $url = "http://localhost:$Port/"
