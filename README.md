@@ -79,7 +79,10 @@ If you'd rather not use the install script:
 
 ```sh
 docker pull ghcr.io/bhouvana/novaos:latest
-docker run -d --name novaos --restart unless-stopped -p 8080:8080 -e PORT=8080 --privileged ghcr.io/bhouvana/novaos:latest
+docker run -d --name novaos --restart unless-stopped -p 8080:8080 -e PORT=8080 --privileged \
+  -v novaos-home:/opt/novaos/tc-root/root \
+  -v novaos-tce:/opt/novaos/tc-root/etc/sysconfig/tcedir \
+  ghcr.io/bhouvana/novaos:latest
 # open http://localhost:8080
 ```
 
@@ -90,8 +93,17 @@ Minetest, from scratch):
 git clone https://github.com/bhouvana/NovaOS.git
 cd NovaOS
 docker build -t novaos .
-docker run -d --name novaos --restart unless-stopped -p 8080:8080 -e PORT=8080 --privileged novaos
+docker run -d --name novaos --restart unless-stopped -p 8080:8080 -e PORT=8080 --privileged \
+  -v novaos-home:/opt/novaos/tc-root/root \
+  -v novaos-tce:/opt/novaos/tc-root/etc/sysconfig/tcedir \
+  novaos
 ```
+
+The two `-v` volumes are what make NovaOS feel like a real second OS instead of a
+demo that forgets everything: your files, settings, and anything installed through
+the Software Center survive container restarts and even NovaOS image updates. The
+rest of the system (apps, games, the desktop itself) always comes from the image, so
+pulling a newer NovaOS still gets you the update instead of a frozen copy.
 
 ## Contributing
 

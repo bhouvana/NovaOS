@@ -15,6 +15,24 @@ mkdir -p /root /tmp/.X11-unix
 chmod 1777 /tmp/.X11-unix
 cp /opt/wbar.conf /root/.wbar 2>/dev/null
 
+# Persistence: the one-command install mounts /root and
+# /etc/sysconfig/tcedir as real Docker volumes, so your files and Software
+# Center installs survive container restarts/upgrades instead of resetting
+# every time (the rest of the rootfs stays image-only, so pushing a new
+# NovaOS image still gets you the update instead of a stale frozen copy).
+# tce-load already records every install-center install to tcedir/onboot.lst
+# (that's what real Tiny Core itself calls this file) - replaying it here,
+# from the locally-cached .tcz files (no download needed), is exactly how
+# Tiny Core's own persistence model works, just triggered by us instead of
+# its normal boot sequence, which this image doesn't run.
+if [ -s /etc/sysconfig/tcedir/onboot.lst ]; then
+  echo "=== NovaOS: restoring Software Center installs from persistent storage ==="
+  while read -r ext; do
+    [ -z "$ext" ] && continue
+    tce-load -i "$ext" 2>&1 | sed 's/^/  /'
+  done < /etc/sysconfig/tcedir/onboot.lst
+fi
+
 # UZDoom (and GZDoom-family engines generally) implement mouselook by
 # repeatedly warping the cursor back to screen center and reading the delta
 # each frame - a technique that assumes the input device is a real, local

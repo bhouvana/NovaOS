@@ -34,6 +34,20 @@ mount --bind /dev/pts "$TCROOT/dev/pts" 2>/dev/null || echo "  (no /dev/pts bind
 mount --bind /proc "$TCROOT/proc" 2>/dev/null || echo "  (no /proc bind - continuing without it)"
 mount --bind /sys "$TCROOT/sys" 2>/dev/null || echo "  (no /sys bind - continuing without it)"
 
+# The default kernel/Docker setup only provisions 8 loop devices (loop0-7).
+# tce-load's real install mechanism (used by the in-desktop Software Center)
+# loop-mounts every package's .tcz permanently for the life of the session -
+# that's genuinely how Tiny Core's extension system works, nothing to fix
+# there - but 8 gets exhausted almost immediately once a package with a real
+# dependency chain is installed (confirmed via strace: "mount: can't setup
+# loop device" after ~6 packages). Pre-creating a much larger set (matching
+# the standard major 7 for loop devices) gives real headroom. Harmless if
+# the host's loop.ko caps out anyway - these are just device nodes, not a
+# guarantee the kernel will service all of them.
+for i in $(seq 8 63); do
+  [ -e "$TCROOT/dev/loop$i" ] || mknod -m 660 "$TCROOT/dev/loop$i" b 7 "$i" 2>/dev/null || true
+done
+
 echo "=== NovaOS: starting Tiny Core desktop natively via chroot (no VM, no CPU emulation) ==="
 chroot "$TCROOT" /opt/chroot-start.sh &
 

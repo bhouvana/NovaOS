@@ -80,9 +80,17 @@ if ($LASTEXITCODE -ne 0) {
 Ok "NovaOS image ready."
 
 # --- 3. run it ----------------------------------------------------------------
+# The two named volumes are what make this a real second OS instead of a demo
+# that forgets everything on restart: your files/settings and anything
+# installed via the in-desktop Software Center persist across restarts and
+# even NovaOS image updates (everything else always comes from the image, so
+# a newer NovaOS pull still gets you the update, not a frozen copy).
 docker rm -f $Name *> $null
 Info "Starting NovaOS..."
-docker run -d --name $Name --restart unless-stopped -p "${Port}:8080" -e PORT=8080 --privileged $Image *> $null
+docker run -d --name $Name --restart unless-stopped -p "${Port}:8080" -e PORT=8080 --privileged `
+  -v novaos-home:/opt/novaos/tc-root/root `
+  -v novaos-tce:/opt/novaos/tc-root/etc/sysconfig/tcedir `
+  $Image *> $null
 
 Info "Waiting for the desktop to come up..."
 $url = "http://localhost:$Port/"
