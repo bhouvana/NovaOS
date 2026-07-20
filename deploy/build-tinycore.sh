@@ -62,7 +62,8 @@ SEED="Xorg-7.7 Xorg-7.7-bin Xorg-7.7-lib Xorg-7.7-3d Xprogs flwm wbar \
   powertop sysstat tcpdump hashcat testdisk ddrescue exfatprogs ntfs-3g samba \
   dejavu-fonts-ttf liberation-fonts-ttf terminus-fonts nerd-fonts-ttf Hack-font \
   adwaita-icon-theme humanity-icon-theme oxygen-fonts ttf-bitstream-vera \
-  7zip zip unrar lz4 zstd unzip"
+  7zip zip unrar lz4 zstd unzip \
+  xdotool libXtst"
 > queue.txt
 > resolved.txt
 mkdir -p deps

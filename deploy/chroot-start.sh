@@ -16,6 +16,23 @@ mkdir -p /root /tmp/.X11-unix
 chmod 1777 /tmp/.X11-unix
 cp /opt/wbar.conf /root/.wbar 2>/dev/null
 
+# Unlike a typical Linux boot, /tmp here isn't on tmpfs - it's part of the
+# container's persistent writable layer, so it survives a `docker restart`.
+# A stale /tmp/.X0-lock or /tmp/.X11-unix/X0 left over from the previous run
+# makes the fresh Xvfb below silently fail to bind (refuses to start if a
+# lock for :0 already exists) while leaving the OLD socket file sitting
+# there - which makes the "wait for X socket" check further down a false
+# positive (the file exists, but nothing is actually listening on it), so
+# every client that tries to connect gets "Can't open display" instead of a
+# working desktop. Confirmed by reproducing it directly: killing Xvfb without
+# clearing these files reliably breaks the next start. Clearing them
+# unconditionally here is safe - there's never a legitimate live Xvfb still
+# using them at this point in the boot sequence.
+rm -f /tmp/.X0-lock
+rm -rf /tmp/.X11-unix
+mkdir -p /tmp/.X11-unix
+chmod 1777 /tmp/.X11-unix
+
 # Persistence: the one-command install mounts /root and
 # /etc/sysconfig/tcedir as real Docker volumes, so your files and Software
 # Center installs survive container restarts/upgrades instead of resetting
@@ -310,14 +327,75 @@ additem "Programming" "Go (terminal)"     "nova-term sh -c 'go version; exec sh'
 additem "Programming" "R (terminal)"      "nova-term R"
 additem "Programming" "GDB (terminal)"    "nova-term gdb"
 
+# Desktop icons: mirrors the $WMX tree just built above into
+# ~/Desktop/<Category>/<Label>.desktop launcher files, so pcmanfm's desktop
+# manager (below) shows the exact same categorized app list as the
+# right-click menu and Alt+Space launcher, as double-clickable folder icons -
+# one more view onto the same additem() calls rather than a fourth list to
+# keep in sync. Icons are looked up from wbar.conf's existing i:/c: pairs by
+# matching the command (covers the original ~50 taskbar apps, since their
+# additem() and wbar.conf commands are kept identical on purpose); anything
+# without a match falls back to a generic icon rather than a broken one.
+echo "=== NovaOS: generating desktop icons ==="
+rm -rf "$HOME/Desktop"
+mkdir -p "$HOME/Desktop"
+GENERIC_ICON=/usr/local/share/icons/hicolor/48x48/apps/utilities-terminal.png
+[ -f "$GENERIC_ICON" ] || GENERIC_ICON=/usr/local/share/pixmaps/geany.png
+find "$HOME/.wmx" -type f | while read -r f; do
+  category=$(basename "$(dirname "$f")")
+  label=$(basename "$f")
+  cmd=$(sed -n 's/^exec //p' "$f")
+  icon=$(awk -v cmd="$cmd" '
+    /^i:/ { icon = substr($0, 4) }
+    /^c:/ { if (substr($0, 4) == cmd) { print icon; exit } }
+  ' /opt/wbar.conf)
+  [ -z "$icon" ] && icon="$GENERIC_ICON"
+  destdir="$HOME/Desktop/$category"
+  mkdir -p "$destdir"
+  cat > "$destdir/$label.desktop" << EOF2
+[Desktop Entry]
+Type=Application
+Name=$label
+Exec=$f
+Icon=$icon
+Terminal=false
+EOF2
+  chmod +x "$destdir/$label.desktop"
+done
+
+# pcmanfm's own -w/--wallpaper-mode CLI flags don't reliably take effect on
+# a first launch (confirmed: it silently falls back to wallpaper_mode=color
+# with no wallpaper= key written at all) - writing its config file directly
+# before launch is what actually works.
+mkdir -p "$HOME/.config/pcmanfm/default"
+if [ -f /usr/local/share/novaos-wallpaper.png ]; then
+  WALLPAPER_LINE="wallpaper=/usr/local/share/novaos-wallpaper.png"
+  WALLPAPER_MODE="crop"
+else
+  WALLPAPER_LINE=""
+  WALLPAPER_MODE="color"
+fi
+cat > "$HOME/.config/pcmanfm/default/desktop-items-0.conf" << EOF
+[*]
+wallpaper_mode=$WALLPAPER_MODE
+wallpaper_common=1
+$WALLPAPER_LINE
+desktop_bg=#4a6fa5
+desktop_fg=#ffffff
+desktop_shadow=#000000
+desktop_font=Sans 12
+show_wm_menu=0
+sort=mtime;ascending;
+show_documents=0
+show_trash=1
+show_mounts=0
+EOF
+
 echo "=== NovaOS: launching flwm ==="
 flwm &
 sleep 1
-if [ -f /usr/local/share/novaos-wallpaper.png ]; then
-  feh --bg-scale /usr/local/share/novaos-wallpaper.png
-else
-  xsetroot -solid "#4a6fa5"
-fi
+echo "=== NovaOS: launching desktop icons + wallpaper (pcmanfm) ==="
+pcmanfm --desktop &
 echo "=== NovaOS: launching wbar ==="
 wbar -pos bottom -isize 32 &
 
@@ -352,6 +430,18 @@ CPU: $cpu%  Mem: $mem / $memmax
 ]];
 EOF
 conky &
+
+# flwm doesn't implement the _NET_WM_WINDOW_TYPE_DESKTOP EWMH hint (it's a
+# minimal, pre-EWMH-era window manager), so pcmanfm's desktop-icon window -
+# which relies on that hint to know it belongs at the very bottom of the
+# stack - ends up on top of everything instead, hiding wbar and conky behind
+# solid black (confirmed empirically). Raising wbar/conky explicitly here
+# achieves the same visual result without needing flwm to understand the hint.
+sleep 1
+WBAR_WIN=$(xdotool search --name wbar 2>/dev/null | head -1)
+CONKY_WIN=$(xdotool search --class conky 2>/dev/null | head -1)
+[ -n "$WBAR_WIN" ] && xdotool windowraise "$WBAR_WIN"
+[ -n "$CONKY_WIN" ] && xdotool windowraise "$CONKY_WIN"
 
 echo "=== NovaOS: launching sxhkd (Alt+Space app launcher) ==="
 sxhkd &
