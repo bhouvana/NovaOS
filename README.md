@@ -29,6 +29,13 @@ install wizard, no dual-boot. One command and it's just... there.
 - **Curated, not dumped.** ~650 packages chosen to work together and stay out of
   each other's way, with the full 3,500-package Tiny Core repository still one
   click away through the built-in Software Center.
+- **A real modern browser, not a toy one.** Firefox — full multi-process
+  architecture, JavaScript, live rendering — running inside a lightweight
+  container. Not something that's a given for this kind of setup: it was tested
+  directly rather than assumed, after the lighter browsers this project started
+  with turned out not to be good enough for the actual modern web.
+
+  ![Firefox running inside NovaOS](docs/firefox-screenshot.png)
 
 ## Get it running
 
