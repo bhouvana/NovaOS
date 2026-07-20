@@ -112,34 +112,32 @@ EOF
 chmod +x /usr/local/bin/nova-software-center
 
 # Universal app launcher: Alt+Space (bound below via sxhkd) pops up a
-# fuzzy-search list of every app already on the taskbar/right-click menu and
-# runs whatever's selected. Reads wbar.conf directly instead of keeping a
-# second hardcoded list in sync with it - the first t:/c: pair is wbar's own
-# self-relaunch entry, not a real app, so it's skipped. Originally used rofi
-# (not GTK-based, so it sidesteps the icon-cache crash class of bug that hit
-# geany/pcmanfm), but rofi's cairo/xcb-render pipeline renders a solid black
-# window with no text at all under this Xvfb setup (confirmed: window maps,
-# background paints, but nothing else draws - reproduced even with a plain
-# 3-item test list and several theme/visual overrides, so it's a rendering
-# bug in that specific build, not a config issue). Switched to dmenu - plain
-# Xlib+Xft, no compositing pipeline to break, confirmed working. Explicit
-# LD_LIBRARY_PATH here because sxhkd-spawned children aren't guaranteed to
-# inherit chroot-start.sh's exported env (confirmed: without it, dmenu/rofi
-# fail silently with no on-screen indication at all).
+# fuzzy-search list of every app in the right-click menu and runs whatever's
+# selected. Reads the $HOME/.wmx tree built by additem() below instead of
+# keeping a second hardcoded list in sync with it - one source of truth for
+# both the right-click menu and the launcher, so a new additem() call is
+# automatically searchable too. Originally used rofi (not GTK-based, so it
+# sidesteps the icon-cache crash class of bug that hit geany/pcmanfm), but
+# rofi's cairo/xcb-render pipeline renders a solid black window with no text
+# at all under this Xvfb setup (confirmed: window maps, background paints,
+# but nothing else draws - reproduced even with a plain 3-item test list and
+# several theme/visual overrides, so it's a rendering bug in that specific
+# build, not a config issue). Switched to dmenu - plain Xlib+Xft, no
+# compositing pipeline to break, confirmed working. Explicit LD_LIBRARY_PATH
+# here because sxhkd-spawned children aren't guaranteed to inherit
+# chroot-start.sh's exported env (confirmed: without it, dmenu/rofi fail
+# silently with no on-screen indication at all).
 cat > /usr/local/bin/nova-launcher << 'EOF'
 #!/bin/sh
 export DISPLAY=:0
 export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/games:/bin:/sbin:/usr/bin:/usr/sbin
 export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:/lib
-LIST=$(awk '
-  BEGIN { first = 1 }
-  /^t:/ { title = substr($0, 4) }
-  /^c:/ {
-    cmd = substr($0, 4)
-    if (first) { first = 0; next }
-    print title "\t" cmd
-  }
-' /opt/wbar.conf)
+LIST=$(for f in "$HOME"/.wmx/*/*; do
+  [ -f "$f" ] || continue
+  label=$(basename "$f")
+  cmd=$(sed -n 's/^exec //p' "$f")
+  printf '%s\t%s\n' "$label" "$cmd"
+done)
 CHOICE=$(printf '%s\n' "$LIST" | cut -f1 | dmenu -i -p "NovaOS")
 [ -z "$CHOICE" ] && exit 0
 CMD=$(printf '%s\n' "$LIST" | awk -F'\t' -v c="$CHOICE" '$1 == c { print $2; exit }')
@@ -196,13 +194,32 @@ additem() {
 additem "Terminal" "aterm"           "nova-term"
 additem "Terminal" "rxvt"            "nova-term-rxvt"
 
+# A few packages in the curated set are installed but not wired into any
+# menu/taskbar entry, because launching them does nothing useful:
+#  - xarchiver: missing libglapi.so.0 at runtime - no package in TC's current
+#    x86_64 repo actually ships that file (checked all the obvious Mesa/GL
+#    candidates), so this looks like a stale .tcz built against an older
+#    Mesa layout. engrampa covers the same job and its own deps resolve
+#    clean, so it's the one on the menu.
+#  - filezilla: linked against wxWidgets 3.0 (libwx_gtk3u_*-3.0.so.0), but
+#    the wxwidgets.tcz this repo currently serves is 3.2 - no 3.0 build is
+#    hosted anywhere in the repo to satisfy it. lftp (terminal) covers FTP
+#    instead.
+#  - vlc: refuses to run as root outright ("VLC is not supposed to be run
+#    as root") and its own vlc-wrapper bypass needs an unprivileged user
+#    account to drop to, which this single-root-user container doesn't
+#    have. mpv has no such restriction and is the primary player here; vlc
+#    stays installed (harmless) but off the menu.
 additem "Files" "File Manager"       "pcmanfm"
-additem "Files" "Archive Manager"    "xarchiver"
+additem "Files" "Archive Manager"    "engrampa"
 
 additem "Editors" "Leafpad"          "leafpad"
 additem "Editors" "Geany"            "geany"
 additem "Editors" "Bluefish (Web)"   "bluefish"
 additem "Editors" "Diff/Merge (meld)" "meld"
+additem "Editors" "Lite XL"          "lite-xl"
+additem "Editors" "Vim (terminal)"   "nova-term vim"
+additem "Editors" "Nano (terminal)"  "nova-term nano"
 
 additem "Graphics" "GIMP"            "gimp-3.0"
 additem "Graphics" "Inkscape"        "inkscape"
@@ -212,6 +229,9 @@ additem "Graphics" "Color Picker"    "gcolor2"
 additem "Graphics" "Darktable"       "darktable"
 additem "Graphics" "Photo Manager"   "shotwell"
 additem "Graphics" "Image Browser"   "xzgv"
+additem "Graphics" "gThumb"          "gthumb"
+additem "Graphics" "Photoflare"      "photoflare"
+additem "Graphics" "Screen Recorder" "simplescreenrecorder"
 
 additem "Office" "LibreOffice Writer"   "lowriter"
 additem "Office" "LibreOffice Calc"     "localc"
@@ -220,31 +240,43 @@ additem "Office" "AbiWord"              "abiword"
 additem "Office" "Gnumeric"             "gnumeric"
 additem "Office" "Document Viewer"      "evince"
 additem "Office" "Calculator"           "galculator"
+additem "Office" "PDF Viewer (mupdf)"   "mupdf"
 
 additem "Internet" "Midori"          "midori"
 additem "Internet" "Dillo"           "dillo"
-additem "Internet" "NetSurf"         "netsurf"
+additem "Internet" "NetSurf"         "netsurf-gtk2"
 additem "Internet" "SeaMonkey"       "seamonkey"
 additem "Internet" "Thunderbird Mail" "thunderbird"
 additem "Internet" "HexChat IRC"     "hexchat"
-additem "Internet" "FileZilla FTP"   "filezilla"
+additem "Internet" "FTP (lftp, terminal)" "nova-term lftp"
 additem "Internet" "qBittorrent"     "qbittorrent"
 additem "Internet" "PuTTY (SSH)"     "putty"
 additem "Internet" "Remmina (Remote Desktop)" "remmina"
 additem "Internet" "IRC (irssi, terminal)" "nova-term irssi"
 additem "Internet" "IRC (weechat, terminal)" "nova-term weechat"
+additem "Internet" "Transmission (Torrent)" "transmission-gtk"
+additem "Internet" "Sylpheed Mail"   "sylpheed"
+additem "Internet" "uGet Download Manager" "uget-gtk"
+additem "Internet" "Profanity (XMPP, terminal)" "nova-term profanity"
 
-additem "Multimedia" "VLC"           "vlc"
 additem "Multimedia" "mpv"           "mpv"
 additem "Multimedia" "Audacious"     "audacious"
 additem "Multimedia" "Audacity"      "audacity"
 additem "Multimedia" "HandBrake"     "ghb"
 additem "Multimedia" "mpg123 (terminal)" "nova-term mpg123"
+additem "Multimedia" "DeaDBeeF"      "deadbeef"
+additem "Multimedia" "QMPlay2"       "qmplay2"
+additem "Multimedia" "Brasero (Disc Burning)" "brasero"
+additem "Multimedia" "Asunder (CD Ripper)" "asunder"
 
 additem "System Tools" "System Monitor (htop)" "nova-term htop"
 additem "System Tools" "Partition Editor"      "gparted"
-additem "System Tools" "Wireshark"             "wireshark"
+additem "System Tools" "Wireshark"             "wireshark-gtk"
 additem "System Tools" "System Info (neofetch)" "nova-term neofetch"
+additem "System Tools" "System Info (fastfetch)" "nova-term fastfetch"
+additem "System Tools" "System Info (inxi)"    "nova-term inxi -Fz"
+additem "System Tools" "Disk Usage (ncdu)"     "nova-term ncdu /"
+additem "System Tools" "Data Recovery (testdisk)" "nova-term testdisk"
 additem "System Tools" "Developer Terminal"    "nova-term"
 additem "System Tools" "Software Center"       "nova-software-center"
 
@@ -263,7 +295,20 @@ additem "Games" "Spider Solitaire"   "spider"
 additem "Games" "Mahjong (Taipei)"   "taipei"
 additem "Games" "Mastermind"         "mastermind"
 additem "Games" "Mini Golf (Ace)"    "golf"
-additem "Games" "DOSBox-X"           "dosbox-x"
+additem "Games" "DOSBox-X"           "dosbox-x -nopromptfolder"
+additem "Games" "MAME (Arcade)"      "mame64"
+additem "Games" "SNES9x"             "snes9x-gtk"
+additem "Games" "PipeWalker"         "pipewalker"
+additem "Games" "LBreakoutHD"        "lbreakouthd"
+
+additem "Programming" "Ruby (terminal)"   "nova-term ruby"
+additem "Programming" "Node.js (terminal)" "nova-term node"
+additem "Programming" "Python (terminal)" "nova-term python3.9"
+additem "Programming" "PHP (terminal)"    "nova-term php"
+additem "Programming" "Lua (terminal)"    "nova-term lua"
+additem "Programming" "Go (terminal)"     "nova-term sh -c 'go version; exec sh'"
+additem "Programming" "R (terminal)"      "nova-term R"
+additem "Programming" "GDB (terminal)"    "nova-term gdb"
 
 echo "=== NovaOS: launching flwm ==="
 flwm &

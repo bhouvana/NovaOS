@@ -40,12 +40,20 @@ taskbar at the bottom, or hit **Alt+Space** for a fuzzy-search app launcher:
 
 - **Terminal** with a real shell — `git`, `gcc`, `python3`, `vim`, `tmux`, and more
   are all there and usable, not just installed for show.
-- **Office & productivity**: LibreOffice, AbiWord, Gnumeric, GIMP, Inkscape, Darktable
-- **Internet**: Midori, Dillo, NetSurf, SeaMonkey, Thunderbird, HexChat, FileZilla,
-  qBittorrent, PuTTY, Remmina
-- **Media**: VLC, mpv, Audacity, Audacious, HandBrake
-- **Games**: Doom, SuperTux, Neverball/Neverputt, Luanti (Minetest, compiled from
-  source), DOSBox-X, Chess, Minesweeper, Bubble Shooter, and the full solitaire family
+- **Programming languages**: Python, Ruby, PHP, Node.js, Go, R, Lua, Mono (C#), plus
+  the usual build toolchain — `cmake`, `gdb`, `clang`, `valgrind`, `ccache`
+- **Office & productivity**: LibreOffice, AbiWord, Gnumeric, GIMP, Inkscape, Darktable,
+  Lite XL, gThumb, Photoflare, mupdf
+- **Internet**: Midori, Dillo, NetSurf, SeaMonkey, Thunderbird, HexChat, qBittorrent,
+  Transmission, Sylpheed, PuTTY, Remmina
+- **Media**: mpv, Audacity, Audacious, DeaDBeeF, QMPlay2, HandBrake, Brasero
+- **Games & emulation**: Doom, SuperTux, Neverball/Neverputt, Luanti (Minetest,
+  compiled from source), DOSBox-X, MAME, SNES9x, Chess, Minesweeper, Bubble Shooter,
+  and the full solitaire family
+- **System & security tools**: Wireshark, nmap, hashcat, Samba, testdisk, fastfetch
+- **~650 packages total** in the curated base image — not a bloated "everything"
+  dump (see [How it works](#how-it-works) for why), but a real, working desktop
+  that keeps growing
 - **Software Center**: install anything else live, from Tiny Core's 3,500+ package
   repository, without rebuilding or restarting anything
 
@@ -58,10 +66,16 @@ Linux userland assembled at build time, running at native container speed (Docke
 containers already share the host kernel — that's the whole trick). `Xvfb` provides
 the display, `x11vnc` + `noVNC` bridge it to your browser.
 
-- [`Dockerfile`](Dockerfile) — the build, in three stages: the curated ~400-package
+- [`Dockerfile`](Dockerfile) — the build, in three stages: the curated ~650-package
   desktop, Minetest compiled from source (no prebuilt package exists for it), then the
   runtime scripts layered on last so editing them doesn't force a rebuild of the
-  expensive stuff.
+  expensive stuff. Curated on purpose rather than "all 3,500 Tiny Core packages" —
+  Tiny Core's own package model assumes each one stays isolated in its own
+  loop-mount, so a lot of them ship files that intentionally shadow another
+  package's files; that's safe under TC's live model but becomes silent file
+  corruption once everything gets flattened into one merged rootfs at build time
+  the way this image does. The Software Center still gives you the full repository
+  on demand, just without baking in that collision risk or the multi-GB size cost.
 - [`deploy/build-tinycore.sh`](deploy/build-tinycore.sh) — resolves and merges the
   package set from Tiny Core's live repo, in parallel.
 - [`deploy/chroot-start.sh`](deploy/chroot-start.sh) — runs inside the chroot: X

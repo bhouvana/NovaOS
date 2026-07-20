@@ -26,7 +26,16 @@ cd "$WORK"
 echo "== resolve curated full-desktop package set (transitive deps, parallel) =="
 # "Ultimate edition" - the full desktop: window manager/taskbar, terminal,
 # file/text/code tools, graphics, office suite, documents, internet, media,
-# system/dev tools, and (Doom plus 6 more) games.
+# system/dev tools, and (Doom plus 6 more) games. Deliberately excludes
+# anything that would fight what's already here rather than add to it:
+# other window managers/desktop environments (icewm, jwm, fluxbox, openbox,
+# i3, gnome-shell/mutter, xfce...) since flwm is the one actually wired up
+# to wbar/sxhkd/the right-click menu; other audio/display servers
+# (pipewire vs the pulseaudio stack already pulled in transitively); and
+# full alternative browser engines (firefox/chromium-class packages) given
+# how much sandboxing plumbing they expect that a chroot doesn't provide -
+# midori/dillo/netsurf/seamonkey already cover that ground at a size and
+# risk this build is comfortable with.
 SEED="Xorg-7.7 Xorg-7.7-bin Xorg-7.7-lib Xorg-7.7-3d Xprogs flwm wbar \
   aterm rxvt \
   pcmanfm leafpad geany gimp inkscape mtpaint gpicview gcolor2 \
@@ -37,7 +46,23 @@ SEED="Xorg-7.7 Xorg-7.7-bin Xorg-7.7-lib Xorg-7.7-3d Xprogs flwm wbar \
   uzdoom supertux nevergames xbubble ace-of-penguins gnome-mines cutechess sudoku dosbox-x \
   conky yad feh dmenu sxhkd \
   darktable irssi meld putty remmina shotwell weechat xzgv audacity bluefish handbrake \
-  x11vnc"
+  x11vnc \
+  ruby perl5 php-8.3-cli lua-5.4 tcl8.6 go R node sqlite3-bin valgrind gdb cmake meson ninja \
+  ccache clang llvm-bin mono swig boost-1.84 jq tig mercurial svn pgloader doxygen \
+  autoconf automake libtool bison flex \
+  vim nano joe l3afpad lite-xl zile ed beaver ted \
+  gthumb eog photoflare simplescreenrecorder scrot imagemagick graphicsmagick potrace \
+  ufraw dcraw exiv2 jpegoptim gimagereader \
+  xpdf-tools mupdf qpdf pdftk img2pdf texinfo groff \
+  transmission sylpheed profanity links-full aria2 uget rtorrent lftp \
+  mplayer-cli deadbeef timidity ffmpeg7 asunder abcde cdrtools brasero qmplay2 g4music \
+  freedoom mame snes9x pipewalker lbreakouthd mednafen \
+  engrampa \
+  lshw hwloc fastfetch inxi ncdu tree lsof iftop mtr iperf3 speedtest-cli smartmontools \
+  powertop sysstat tcpdump hashcat testdisk ddrescue exfatprogs ntfs-3g samba \
+  dejavu-fonts-ttf liberation-fonts-ttf terminus-fonts nerd-fonts-ttf Hack-font \
+  adwaita-icon-theme humanity-icon-theme oxygen-fonts ttf-bitstream-vera \
+  7zip zip unrar lz4 zstd unzip"
 > queue.txt
 > resolved.txt
 mkdir -p deps
@@ -137,6 +162,21 @@ chroot "$WORK/rootfs" /usr/bin/env LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:/lib 
     echo "  running: $(basename "$f")"
     sh "$f" 2>&1 | sed "s/^/    /"
   done' || echo "WARN: some post-install scripts failed, continuing anyway"
+
+echo "== fix up packages whose postinstall script we skipped but that had a real, non-destructive side effect =="
+# audacious's postinstall script is skipped above because it references
+# /tmp/tcloop (like libfm/nevergames), but unlike those it's not destructive -
+# it just copies the real binary from the extracted package into
+# /usr/local/bin (apparently upstream's own build has "some strange activity"
+# that leaves it out otherwise). Skipping the whole script means that copy
+# never happens and the binary is left stranded under
+# /usr/local/share/audacious/files/, invisible to $PATH and any menu entry.
+# Redo just that part here, directly against the merged rootfs.
+AUD_BIN="$WORK/rootfs/usr/local/share/audacious/files/audacious"
+if [ -x "$AUD_BIN" ] && [ ! -e "$WORK/rootfs/usr/local/bin/audacious" ]; then
+  cp "$AUD_BIN" "$WORK/rootfs/usr/local/bin/audacious"
+  chmod 755 "$WORK/rootfs/usr/local/bin/audacious"
+fi
 
 echo "== generate NovaOS wallpaper =="
 convert -size 1920x1080 gradient:'#1a2744-#4a6fa5' \
