@@ -86,6 +86,18 @@ fi
 ok "NovaOS image ready."
 
 # --- 3. run it ----------------------------------------------------------------
+# Fail fast on a likely port conflict rather than waiting through a futile
+# health-check loop first - 8080 is a very common default for other dev
+# tools (Jenkins, Tomcat, etc. all default there too). Best-effort only
+# (needs bash's /dev/tcp - silently skipped under a plain POSIX sh, though
+# this script is meant to be piped to bash) - the real failure is still
+# caught properly by the docker-run exit code check below either way.
+if (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; then
+  exec 3<&- 2>/dev/null
+  exec 3>&- 2>/dev/null
+  die "Port $PORT is already in use by something else on this machine. Set a different port and re-run, e.g.: NOVAOS_PORT=8081 curl -fsSL https://raw.githubusercontent.com/bhouvana/NovaOS/master/deploy/install.sh | bash"
+fi
+
 # The two named volumes are what make this a real second OS instead of a demo
 # that forgets everything on restart: your files/settings and anything
 # installed via the in-desktop Software Center persist across restarts and
@@ -93,16 +105,18 @@ ok "NovaOS image ready."
 # a newer NovaOS pull still gets you the update, not a frozen copy).
 $DOCKER rm -f "$NAME" >/dev/null 2>&1 || true
 info "Starting NovaOS..."
-$DOCKER run -d --name "$NAME" --restart unless-stopped -p "$PORT:8080" -e PORT=8080 --privileged \
+if ! $DOCKER run -d --name "$NAME" --restart unless-stopped -p "$PORT:8080" -e PORT=8080 --privileged \
   -v novaos-home:/opt/novaos/tc-root/root \
   -v novaos-tce:/opt/novaos/tc-root/etc/sysconfig/tcedir \
-  "$IMAGE" >/dev/null
+  "$IMAGE" >/dev/null; then
+  die "NovaOS failed to start. Run 'docker logs $NAME' for details - a port conflict on $PORT is the most likely cause even after the check above, if something grabbed it in between."
+fi
 
 info "Waiting for the desktop to come up..."
 i=0
 until curl -fsS "http://localhost:$PORT/" >/dev/null 2>&1; do
   i=$((i+1))
-  [ "$i" -gt 60 ] && { warn "Taking longer than expected - check 'docker logs $NAME' if this doesn't load."; break; }
+  [ "$i" -gt 60 ] && die "NovaOS container is running but the desktop never came up at http://localhost:$PORT/. Run 'docker logs $NAME' to see what's wrong."
   sleep 1
 done
 

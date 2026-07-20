@@ -105,6 +105,32 @@ if ($LASTEXITCODE -ne 0) {
 Ok "NovaOS image ready."
 
 # --- 3. run it ----------------------------------------------------------------
+# Fail fast on a port conflict rather than silently binding nothing and
+# only finding out 60 seconds later - a genuinely common case, since 8080 is
+# also Jenkins/Tomcat/every other dev tool's default port. Checks by trying
+# to CONNECT to the port, not by trying to listen on it - a listen-based
+# check gives a false negative against Docker Desktop's own WSL2 port
+# forwarding on Windows (confirmed directly: it missed an actively-running
+# container's own port entirely). This check has a race (something else
+# could grab the port between the check and the actual docker run below),
+# but that failure is now caught properly right after too, so this is
+# purely about giving the common case a fast, clear message instead of a
+# full timed-out wait loop first.
+$portBusy = $false
+try {
+    $client = New-Object System.Net.Sockets.TcpClient
+    $connectResult = $client.BeginConnect("127.0.0.1", $Port, $null, $null)
+    if ($connectResult.AsyncWaitHandle.WaitOne(300) -and $client.Connected) {
+        $portBusy = $true
+    }
+    $client.Close()
+} catch {
+    $portBusy = $false
+}
+if ($portBusy) {
+    Die "Port $Port is already in use by something else on this machine. Set a different port and re-run, e.g.:`n    `$env:NOVAOS_PORT=8081; irm https://raw.githubusercontent.com/bhouvana/NovaOS/master/deploy/install.ps1 | iex"
+}
+
 # The two named volumes are what make this a real second OS instead of a demo
 # that forgets everything on restart: your files/settings and anything
 # installed via the in-desktop Software Center persist across restarts and
@@ -118,6 +144,17 @@ Invoke-Quiet {
       -v novaos-tce:/opt/novaos/tc-root/etc/sysconfig/tcedir `
       $Image
 }
+# docker run (create + start in one step) returns non-zero if the container
+# fails to actually start - a port bind failure being the most likely cause -
+# and this was never being checked, so a failed start went completely
+# unnoticed: the script would still print "[OK] NovaOS is running" and open
+# a browser tab to a URL nothing was actually listening on (confirmed: this
+# is exactly what happened to a real user - the container sat in "Created",
+# never "Up", and the browser opened straight into an unrelated Jenkins
+# instance already running on the same port).
+if ($LASTEXITCODE -ne 0) {
+    Die "NovaOS failed to start. Run 'docker logs $Name' for details - a port conflict on $Port is the most likely cause even after the check above, if something grabbed it in between."
+}
 
 Info "Waiting for the desktop to come up..."
 $url = "http://localhost:$Port/"
@@ -129,7 +166,9 @@ for ($i = 0; $i -lt 60; $i++) {
         break
     } catch { Start-Sleep -Seconds 1 }
 }
-if (-not $up) { Warn "Taking longer than expected - check 'docker logs $Name' if this doesn't load." }
+if (-not $up) {
+    Die "NovaOS container is running but the desktop never came up at $url. Run 'docker logs $Name' to see what's wrong."
+}
 
 Ok "NovaOS is running at $url"
 Start-Process $url
