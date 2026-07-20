@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: novaos
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    plan: free
-    healthCheckPath: /vnc.html

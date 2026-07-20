@@ -35,7 +35,7 @@ SEED="Xorg-7.7 Xorg-7.7-bin Xorg-7.7-lib Xorg-7.7-3d Xprogs flwm wbar \
   vlc mpv audacious mpg123 \
   htop gparted wireshark git gcc make python3.9 nmap gnupg openssh rsync screen tmux neofetch figlet strace \
   uzdoom supertux nevergames xbubble ace-of-penguins gnome-mines cutechess sudoku dosbox-x \
-  conky yad feh \
+  conky yad feh dmenu sxhkd \
   darktable irssi meld putty remmina shotwell weechat xzgv audacity bluefish handbrake \
   x11vnc"
 > queue.txt

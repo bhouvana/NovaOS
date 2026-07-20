@@ -6,6 +6,8 @@ install wizard, no dual-boot. One command and it's just... there.
 
 ![NovaOS status](https://img.shields.io/badge/status-working-brightgreen)
 
+![NovaOS desktop](docs/screenshot.png)
+
 ## Get it running
 
 Never touched Docker before? Doesn't matter — paste one of these into your terminal
@@ -33,8 +35,8 @@ That's it. Your browser opens to `http://localhost:8080` with the full desktop r
 
 ## What you get
 
-A real desktop, not a tech demo — right-click for a full categorized app menu, or use
-the taskbar at the bottom:
+A real desktop, not a tech demo — right-click for a full categorized app menu, use the
+taskbar at the bottom, or hit **Alt+Space** for a fuzzy-search app launcher:
 
 - **Terminal** with a real shell — `git`, `gcc`, `python3`, `vim`, `tmux`, and more
   are all there and usable, not just installed for show.

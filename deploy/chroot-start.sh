@@ -1,6 +1,7 @@
 #!/bin/sh
 # Runs inside the chroot'd Tiny Core rootfs - native speed, no VM/kernel emulation.
 export HOME=/root
+export SHELL=/bin/sh
 export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/games:/bin:/sbin:/usr/bin:/usr/sbin
 export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:/lib
 
@@ -109,6 +110,53 @@ case $RET in
 esac
 EOF
 chmod +x /usr/local/bin/nova-software-center
+
+# Universal app launcher: Alt+Space (bound below via sxhkd) pops up a
+# fuzzy-search list of every app already on the taskbar/right-click menu and
+# runs whatever's selected. Reads wbar.conf directly instead of keeping a
+# second hardcoded list in sync with it - the first t:/c: pair is wbar's own
+# self-relaunch entry, not a real app, so it's skipped. Originally used rofi
+# (not GTK-based, so it sidesteps the icon-cache crash class of bug that hit
+# geany/pcmanfm), but rofi's cairo/xcb-render pipeline renders a solid black
+# window with no text at all under this Xvfb setup (confirmed: window maps,
+# background paints, but nothing else draws - reproduced even with a plain
+# 3-item test list and several theme/visual overrides, so it's a rendering
+# bug in that specific build, not a config issue). Switched to dmenu - plain
+# Xlib+Xft, no compositing pipeline to break, confirmed working. Explicit
+# LD_LIBRARY_PATH here because sxhkd-spawned children aren't guaranteed to
+# inherit chroot-start.sh's exported env (confirmed: without it, dmenu/rofi
+# fail silently with no on-screen indication at all).
+cat > /usr/local/bin/nova-launcher << 'EOF'
+#!/bin/sh
+export DISPLAY=:0
+export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/games:/bin:/sbin:/usr/bin:/usr/sbin
+export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:/lib
+LIST=$(awk '
+  BEGIN { first = 1 }
+  /^t:/ { title = substr($0, 4) }
+  /^c:/ {
+    cmd = substr($0, 4)
+    if (first) { first = 0; next }
+    print title "\t" cmd
+  }
+' /opt/wbar.conf)
+CHOICE=$(printf '%s\n' "$LIST" | cut -f1 | dmenu -i -p "NovaOS")
+[ -z "$CHOICE" ] && exit 0
+CMD=$(printf '%s\n' "$LIST" | awk -F'\t' -v c="$CHOICE" '$1 == c { print $2; exit }')
+[ -n "$CMD" ] && sh -c "exec $CMD" &
+EOF
+chmod +x /usr/local/bin/nova-launcher
+
+# sxhkd binds the actual hotkey. Alt+Space rather than the "Super"/Windows
+# key most real launchers use - Super is frequently intercepted by the host
+# OS or browser before a remote session ever sees it (Windows' own Start
+# Menu, for one), so it's not reliable inside a browser tab. Alt+Space isn't
+# claimed by anything at that layer.
+mkdir -p /root/.config/sxhkd
+cat > /root/.config/sxhkd/sxhkdrc << 'EOF'
+alt + space
+    nova-launcher
+EOF
 
 echo "=== NovaOS: starting Xvfb (virtual framebuffer, no VM needed) ==="
 # -listen tcp: lets processes outside the chroot (which have no visibility into
@@ -259,6 +307,9 @@ CPU: $cpu%  Mem: $mem / $memmax
 ]];
 EOF
 conky &
+
+echo "=== NovaOS: launching sxhkd (Alt+Space app launcher) ==="
+sxhkd &
 
 # --- terminal: only works with a real devpts mount ---------------------
 # aterm/urxvt need a Unix98 PTY (ptsname() -> open(/dev/pts/N)), which needs
