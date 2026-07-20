@@ -86,8 +86,9 @@ different ways to get to it.
   PuTTY, Remmina
 - **Media**: mpv, Audacity, Audacious, DeaDBeeF, QMPlay2, HandBrake, Brasero
 - **Games & emulation**: Doom, SuperTux, Neverball/Neverputt, Luanti (Minetest,
-  compiled from source), DOSBox-X, MAME, SNES9x, Chess, Minesweeper, Bubble Shooter,
-  and the full solitaire family
+  compiled from source), DOSBox-X, MAME, SNES9x, SameBoy (Game Boy/Color) and
+  VBA-M (Game Boy Advance) - both compiled from source, bring your own legally-owned
+  ROMs, Chess, Minesweeper, Bubble Shooter, and the full solitaire family
 - **System & security tools**: Wireshark, nmap, hashcat, Samba, testdisk, fastfetch
 - **Software Center**: install anything else live, from Tiny Core's 3,500+ package
   repository, without rebuilding or restarting anything

@@ -143,7 +143,19 @@ export DISPLAY=:0
 export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/games:/bin:/sbin:/usr/bin:/usr/sbin
 export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:/lib
 EMULATOR="$1"
-ROM=$(yad --file --title="Select a ROM to open with $EMULATOR" --center)
+case "$EMULATOR" in
+  sameboy) SYSTEM="Game Boy / Game Boy Color"; EXT="*.gb *.gbc" ;;
+  vbam)    SYSTEM="Game Boy Advance"; EXT="*.gba" ;;
+  *)       SYSTEM="game"; EXT="*" ;;
+esac
+
+yad --title="NovaOS Game Launcher" --center --width=420 --image=dialog-information \
+  --text="<b>$SYSTEM emulator</b>\n\nOn the next screen, pick a ROM file to play it.\n\nDon't have one on NovaOS yet? Cancel this, use <b>Files</b> to copy your own legally-owned ROM in first, then reopen $SYSTEM from the menu." \
+  --button="Cancel:1" --button="Choose ROM...:0"
+[ $? -ne 0 ] && exit 0
+
+ROM=$(yad --file --title="Select your $SYSTEM ROM" --center --filename="/root/" \
+  --file-filter="$SYSTEM ROMs | $EXT" --file-filter="All files | *")
 [ -n "$ROM" ] && exec "$EMULATOR" "$ROM"
 EOF
 chmod +x /usr/local/bin/nova-rom-launcher
