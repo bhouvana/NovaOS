@@ -8,14 +8,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cpio \
     gzip \
     ca-certificates \
+    imagemagick \
     && rm -rf /var/lib/apt/lists/*
 
-COPY deploy/wbar.conf /build-assets/
 COPY deploy/build-tinycore.sh /build-tinycore.sh
 RUN chmod +x /build-tinycore.sh && /build-tinycore.sh
 
-# chroot-start.sh copied separately, after the expensive package-resolution
-# step above, so editing it doesn't invalidate that step's build cache.
+# Minetest has no pre-built Tiny Core package, so it's compiled from source
+# in its own layer - separate from the step above so editing this script
+# doesn't force the (already expensive) main package resolution to redo.
+COPY deploy/build-minetest.sh /build-minetest.sh
+RUN chmod +x /build-minetest.sh && /build-minetest.sh
+
+# wbar.conf and chroot-start.sh copied separately, after both expensive steps
+# above, so editing either one (which happens often - taskbar/menu tweaks)
+# doesn't force a full package re-resolution or, worse, a full Minetest
+# recompile. Learned this the hard way: wbar.conf used to be consumed by
+# build-tinycore.sh directly, so editing it invalidated everything downstream
+# including the ~15+ minute Minetest build.
+COPY deploy/wbar.conf /opt/novaos/tc-root/opt/wbar.conf
 COPY deploy/chroot-start.sh /opt/novaos/tc-root/opt/chroot-start.sh
 RUN chmod +x /opt/novaos/tc-root/opt/chroot-start.sh
 

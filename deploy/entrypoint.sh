@@ -15,6 +15,19 @@ cd "$TCROOT/dev"
 [ -e ptmx ]    || mknod -m 666 ptmx c 5 2    2>/dev/null || echo "  (mknod ptmx failed - continuing)"
 cd /
 
+# The chroot has no DNS config of its own - without this, the in-desktop
+# Software Center's tce-load can't resolve repo.tinycorelinux.net at all
+# ("wget: bad address"). Doesn't need any special privilege, unlike the
+# mounts below.
+cp /etc/resolv.conf "$TCROOT/etc/resolv.conf" 2>/dev/null || true
+
+# These need CAP_SYS_ADMIN. Unprivileged containers (Render, plain `docker
+# run`) don't have it, and the mounts below are silently skipped - the desktop
+# still works, just without a terminal (aterm needs a real devpts mount for
+# PTY allocation). Running with --privileged or --cap-add=SYS_ADMIN (as the
+# README's quick-start command does) makes these succeed and unlocks the
+# terminal - chroot-start.sh checks for a working devpts mount and launches
+# aterm only if one is actually present.
 echo "=== NovaOS: best-effort bind mounts for /dev, /proc, /sys (skipped if unprivileged) ==="
 mount --bind /dev "$TCROOT/dev" 2>/dev/null || echo "  (no /dev bind - continuing without it)"
 mount --bind /dev/pts "$TCROOT/dev/pts" 2>/dev/null || echo "  (no /dev/pts bind - continuing without it)"
@@ -32,17 +45,6 @@ for i in $(seq 1 20); do
   fi
   sleep 1
 done
-
-# Known limitation: aterm only supports Unix98 PTY allocation (/dev/ptmx +
-# ptsname()), which needs a mounted devpts instance to resolve the slave path.
-# Render's containers (like local unprivileged Docker) grant no CAP_SYS_ADMIN,
-# so devpts can't be mounted anywhere, in or out of the chroot - confirmed via
-# direct testing (mount -t devpts fails with EPERM even locally). Running aterm
-# outside the chroot avoids the PTY error but breaks its terminfo/locale/passwd
-# lookups (hardcoded to the real root), causing a crash instead. Left disabled
-# until a proper fix (e.g. a custom launcher using TIOCGPTPEER, or patching
-# aterm) - the rest of the desktop (flwm, wbar, all GUI apps, Doom) is unaffected.
-echo "=== NovaOS: terminal app (aterm) skipped - known PTY limitation under unprivileged containers ==="
 
 echo "=== NovaOS: waiting for VNC port ==="
 for i in $(seq 1 30); do
