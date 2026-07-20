@@ -31,17 +31,20 @@ echo "== resolve curated full-desktop package set (transitive deps, parallel) ==
 # other window managers/desktop environments (icewm, jwm, fluxbox, openbox,
 # i3, gnome-shell/mutter, xfce...) since flwm is the one actually wired up
 # to wbar/sxhkd/the right-click menu; other audio/display servers
-# (pipewire vs the pulseaudio stack already pulled in transitively); and
-# full alternative browser engines (firefox/chromium-class packages) given
-# how much sandboxing plumbing they expect that a chroot doesn't provide -
-# midori/dillo/netsurf/seamonkey already cover that ground at a size and
-# risk this build is comfortable with.
+# (pipewire vs the pulseaudio stack already pulled in transitively). Only
+# one real browser (firefox-ESR) rather than several lightweight ones
+# (midori/dillo/netsurf/seamonkey) - confirmed directly that the
+# lightweight ones just aren't good enough for real modern sites, and
+# firefox-ESR turned out to work cleanly in this chroot despite the
+# up-front assumption that its sandboxing would fight a chroot environment -
+# it doesn't, confirmed by actually launching it (multi-process model,
+# content processes, the works) rather than assuming.
 SEED="Xorg-7.7 Xorg-7.7-bin Xorg-7.7-lib Xorg-7.7-3d Xprogs flwm wbar \
   aterm rxvt \
   pcmanfm leafpad geany gimp inkscape mtpaint gpicview gcolor2 \
   galculator abiword libreoffice gnumeric evince xarchiver \
-  midori dillo netsurf seamonkey thunderbird hexchat filezilla qbittorrent \
-  vlc mpv audacious mpg123 \
+  firefox-ESR thunderbird hexchat filezilla qbittorrent \
+  vlc mpv audacious audacious-plugins mpg123 \
   htop gparted wireshark git gcc make python3.9 nmap gnupg openssh rsync screen tmux neofetch figlet strace \
   uzdoom supertux nevergames xbubble ace-of-penguins gnome-mines cutechess sudoku dosbox-x \
   conky yad feh dmenu sxhkd \

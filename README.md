@@ -75,8 +75,8 @@ different ways to get to it.
   the usual build toolchain — `cmake`, `gdb`, `clang`, `valgrind`, `ccache`
 - **Office & productivity**: LibreOffice, AbiWord, Gnumeric, GIMP, Inkscape, Darktable,
   Lite XL, gThumb, Photoflare, mupdf
-- **Internet**: Midori, Dillo, NetSurf, SeaMonkey, Thunderbird, HexChat, qBittorrent,
-  Transmission, Sylpheed, PuTTY, Remmina
+- **Internet**: Firefox, Thunderbird, HexChat, qBittorrent, Transmission, Sylpheed,
+  PuTTY, Remmina
 - **Media**: mpv, Audacity, Audacious, DeaDBeeF, QMPlay2, HandBrake, Brasero
 - **Games & emulation**: Doom, SuperTux, Neverball/Neverputt, Luanti (Minetest,
   compiled from source), DOSBox-X, MAME, SNES9x, Chess, Minesweeper, Bubble Shooter,
