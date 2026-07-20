@@ -396,6 +396,20 @@ flwm &
 sleep 1
 echo "=== NovaOS: launching desktop icons + wallpaper (pcmanfm) ==="
 pcmanfm --desktop &
+# wbar's dock skin (osxbarback.png) uses pseudo-transparency - it grabs the
+# root window's background pixmap (via the standard _XROOTPMAP_ID property)
+# and blends that into its own rendering instead of drawing a real
+# translucent surface. pcmanfm's own wallpaper mechanism doesn't set that
+# property (it paints its own window directly), so wbar had nothing valid
+# to grab and fell back to solid black behind every icon - confirmed
+# empirically: still had the black box with pcmanfm's own wallpaper
+# genuinely working. feh does set that property, same as it always did, so
+# running it alongside pcmanfm gives wbar something real to blend with again
+# without changing what's actually visible for the rest of the desktop
+# (pcmanfm's own icon-desktop window still paints on top of it either way).
+if [ -f /usr/local/share/novaos-wallpaper.png ]; then
+  feh --bg-scale /usr/local/share/novaos-wallpaper.png
+fi
 echo "=== NovaOS: launching wbar ==="
 wbar -pos bottom -isize 32 &
 
@@ -435,13 +449,22 @@ conky &
 # minimal, pre-EWMH-era window manager), so pcmanfm's desktop-icon window -
 # which relies on that hint to know it belongs at the very bottom of the
 # stack - ends up on top of everything instead, hiding wbar and conky behind
-# solid black (confirmed empirically). Raising wbar/conky explicitly here
-# achieves the same visual result without needing flwm to understand the hint.
-sleep 1
-WBAR_WIN=$(xdotool search --name wbar 2>/dev/null | head -1)
-CONKY_WIN=$(xdotool search --class conky 2>/dev/null | head -1)
-[ -n "$WBAR_WIN" ] && xdotool windowraise "$WBAR_WIN"
-[ -n "$CONKY_WIN" ] && xdotool windowraise "$CONKY_WIN"
+# solid black (confirmed empirically). A one-shot raise right after launch
+# isn't enough either - confirmed empirically that wbar/conky can end up
+# covered again sometime after boot even once successfully raised once
+# (pcmanfm re-asserting its own stacking position, most likely). Runs as a
+# standing background loop for the life of the session instead of a single
+# fix-up, so it self-heals whenever this happens rather than only covering
+# the boot race. Cheap - two xdotool searches every few seconds.
+(
+  while true; do
+    WBAR_WIN=$(xdotool search --name wbar 2>/dev/null | head -1)
+    [ -n "$WBAR_WIN" ] && xdotool windowraise "$WBAR_WIN" 2>/dev/null
+    CONKY_WIN=$(xdotool search --class conky 2>/dev/null | head -1)
+    [ -n "$CONKY_WIN" ] && xdotool windowraise "$CONKY_WIN" 2>/dev/null
+    sleep 3
+  done
+) &
 
 echo "=== NovaOS: launching sxhkd (Alt+Space app launcher) ==="
 sxhkd &
