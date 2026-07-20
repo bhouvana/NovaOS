@@ -4,3 +4,17 @@ Cargo.lock.bak
 *.log
 .DS_Store
 Thumbs.db
+
+# Game ROMs are copyrighted and never belong in this repo or the shipped
+# image - NovaOS ships emulators only, never game data. Defensive blanket
+# exclude in case one ends up in the working tree during local testing.
+*.gba
+*.gb
+*.gbc
+*.nds
+*.n64
+*.z64
+*.nes
+*.smc
+*.sfc
+*.iso

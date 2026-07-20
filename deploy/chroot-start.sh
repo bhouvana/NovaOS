@@ -128,6 +128,26 @@ esac
 EOF
 chmod +x /usr/local/bin/nova-software-center
 
+# Game Boy / GBA emulator launcher: neither SameBoy nor VBA-M's SDL
+# frontend has its own file-open dialog (no GUI toolkit in either build -
+# that's deliberate, see build-gameboy.sh/build-gba.sh for why), and VBA-M
+# specifically exits immediately with no ROM argument at all rather than
+# opening to an empty/waiting window the way SameBoy does - confirmed
+# directly, it prints "Missing image name" and quits. Without this, opening
+# either from the menu with no ROM loaded yet would just silently do
+# nothing (VBA-M) or open an unhelpful black window with no obvious way to
+# load a game (SameBoy). yad's file picker fills that gap for both.
+cat > /usr/local/bin/nova-rom-launcher << 'EOF'
+#!/bin/sh
+export DISPLAY=:0
+export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/games:/bin:/sbin:/usr/bin:/usr/sbin
+export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:/lib
+EMULATOR="$1"
+ROM=$(yad --file --title="Select a ROM to open with $EMULATOR" --center)
+[ -n "$ROM" ] && exec "$EMULATOR" "$ROM"
+EOF
+chmod +x /usr/local/bin/nova-rom-launcher
+
 # Universal app launcher: Alt+Space (bound below via sxhkd) pops up a
 # fuzzy-search list of every app in the right-click menu and runs whatever's
 # selected. Reads the $HOME/.wmx tree built by additem() below instead of
@@ -314,6 +334,8 @@ additem "Games" "MAME (Arcade)"      "mame64"
 additem "Games" "SNES9x"             "snes9x-gtk"
 additem "Games" "PipeWalker"         "pipewalker"
 additem "Games" "LBreakoutHD"        "lbreakouthd"
+additem "Games" "SameBoy (Game Boy)" "nova-rom-launcher sameboy"
+additem "Games" "VBA-M (Game Boy Advance)" "nova-rom-launcher vbam"
 
 additem "Programming" "Ruby (terminal)"   "nova-term ruby"
 additem "Programming" "Node.js (terminal)" "nova-term node"

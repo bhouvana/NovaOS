@@ -20,6 +20,21 @@ RUN chmod +x /build-tinycore.sh && /build-tinycore.sh
 COPY deploy/build-minetest.sh /build-minetest.sh
 RUN chmod +x /build-minetest.sh && /build-minetest.sh
 
+# Same story for the Game Boy/Color emulator (SameBoy) - no Tiny Core
+# package for it either. Runs after Minetest specifically to reuse the
+# SDL2/libpng/OpenAL/Mesa dev headers that stage already merged into the
+# rootfs, confirmed directly that this build needs no dev packages of its
+# own as a result.
+COPY deploy/build-gameboy.sh /build-gameboy.sh
+RUN chmod +x /build-gameboy.sh && /build-gameboy.sh
+
+# Game Boy Advance needs a different emulator entirely - SameBoy above is
+# architecturally incapable of running GBA games. VBA-M's SDL frontend,
+# built with no wxWidgets GUI dependency (confirmed live that
+# ENABLE_WX=OFF still produces a fully working binary).
+COPY deploy/build-gba.sh /build-gba.sh
+RUN chmod +x /build-gba.sh && /build-gba.sh
+
 # wbar.conf and chroot-start.sh copied separately, after both expensive steps
 # above, so editing either one (which happens often - taskbar/menu tweaks)
 # doesn't force a full package re-resolution or, worse, a full Minetest
