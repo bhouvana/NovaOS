@@ -88,12 +88,33 @@ different ways to get to it.
 - **Games & emulation**: Doom, SuperTux, Neverball/Neverputt, Luanti (Minetest,
   compiled from source), DOSBox-X, MAME, SNES9x, SameBoy (Game Boy/Color) and
   VBA-M (Game Boy Advance) - both compiled from source, bring your own legally-owned
-  ROMs, Chess, Minesweeper, Bubble Shooter, and the full solitaire family
+  ROMs. Clicking either from the menu walks you through picking a ROM file and shows
+  the controls (arrow keys to move, X/Z for A/B, Enter/Backspace for Start/Select).
+  Also: Chess, Minesweeper, Bubble Shooter, and the full solitaire family
 - **System & security tools**: Wireshark, nmap, hashcat, Samba, testdisk, fastfetch
 - **Software Center**: install anything else live, from Tiny Core's 3,500+ package
   repository, without rebuilding or restarting anything
 
 None of this is a curated demo subset — it's the actual, working thing.
+
+### Playing your own Game Boy / GBA games
+
+NovaOS ships the emulators only — no game data, since ROMs are copyrighted. Bring
+your own legally-obtained ROM and you're playing in under a minute:
+
+1. Open **Files** and copy your ROM file (`.gb`/`.gbc` for Game Boy, `.gba` for
+   Game Boy Advance) into the Home folder. Thanks to the persistent `novaos-home`
+   volume, it's still there next time you restart NovaOS — no need to re-copy it.
+2. Click **SameBoy (Game Boy)** or **VBA-M (Game Boy Advance)** from the Games menu
+   or the taskbar.
+3. A dialog explains what's happening and lists the controls, then click
+   **Choose ROM...** — a file picker opens right in your Home folder, already
+   filtered to the matching extension.
+4. Pick your ROM and the game launches straight in.
+
+**Controls**: arrow keys = D-pad, X = A, Z = B, Enter = Start, Backspace = Select,
+hold Space = turbo. VBA-M also maps A/S to the L/R shoulder buttons; SameBoy's Esc
+key opens its menu (save states, etc.).
 
 ## How it works
 

@@ -144,13 +144,15 @@ export PATH=/usr/local/bin:/usr/local/sbin:/usr/local/games:/bin:/sbin:/usr/bin:
 export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:/lib
 EMULATOR="$1"
 case "$EMULATOR" in
-  sameboy) SYSTEM="Game Boy / Game Boy Color"; EXT="*.gb *.gbc" ;;
-  vbam)    SYSTEM="Game Boy Advance"; EXT="*.gba" ;;
-  *)       SYSTEM="game"; EXT="*" ;;
+  sameboy) SYSTEM="Game Boy / Game Boy Color"; EXT="*.gb *.gbc"
+    CONTROLS="Arrow keys = D-pad\nX = A, Z = B\nEnter = Start, Backspace = Select\nSpace (hold) = turbo\nEsc = emulator menu (save state, etc.)" ;;
+  vbam)    SYSTEM="Game Boy Advance"; EXT="*.gba"
+    CONTROLS="Arrow keys = D-pad\nX = A, Z = B\nA = L, S = R (shoulder buttons)\nEnter = Start, Backspace = Select\nSpace (hold) = turbo" ;;
+  *)       SYSTEM="game"; EXT="*"; CONTROLS="" ;;
 esac
 
 yad --title="NovaOS Game Launcher" --center --width=420 --image=dialog-information \
-  --text="<b>$SYSTEM emulator</b>\n\nOn the next screen, pick a ROM file to play it.\n\nDon't have one on NovaOS yet? Cancel this, use <b>Files</b> to copy your own legally-owned ROM in first, then reopen $SYSTEM from the menu." \
+  --text="<b>$SYSTEM emulator</b>\n\nOn the next screen, pick a ROM file to play it.\n\nDon't have one on NovaOS yet? Cancel this, use <b>Files</b> to copy your own legally-owned ROM in first, then reopen $SYSTEM from the menu.\n\n<b>Controls once it's running:</b>\n$CONTROLS" \
   --button="Cancel:1" --button="Choose ROM...:0"
 [ $? -ne 0 ] && exit 0
 
